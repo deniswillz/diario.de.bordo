@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS profiles (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Adicionar coluna username se não existir
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+
 -- 2. Tabela de notas fiscais
 CREATE TABLE IF NOT EXISTS notas_fiscais (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,6 +66,7 @@ ALTER TABLE comentarios ENABLE ROW LEVEL SECURITY;
 -- Drop existing policies (if any) to avoid conflicts
 DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 DROP POLICY IF EXISTS "Anyone can view notas" ON notas_fiscais;
 DROP POLICY IF EXISTS "Authenticated users can insert notas" ON notas_fiscais;
 DROP POLICY IF EXISTS "Authenticated users can update notas" ON notas_fiscais;
@@ -77,56 +81,32 @@ DROP POLICY IF EXISTS "Authenticated users can update comentarios" ON comentario
 DROP POLICY IF EXISTS "Authenticated users can delete comentarios" ON comentarios;
 
 -- Policies for profiles
-CREATE POLICY "Users can view all profiles" ON profiles
-    FOR SELECT USING (true);
-
-CREATE POLICY "Users can update own profile" ON profiles
-    FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Policies for notas_fiscais
-CREATE POLICY "Anyone can view notas" ON notas_fiscais
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can insert notas" ON notas_fiscais
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can update notas" ON notas_fiscais
-    FOR UPDATE USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can delete notas" ON notas_fiscais
-    FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "Anyone can view notas" ON notas_fiscais FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can insert notas" ON notas_fiscais FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can update notas" ON notas_fiscais FOR UPDATE USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can delete notas" ON notas_fiscais FOR DELETE USING (auth.uid() IS NOT NULL);
 
 -- Policies for ordens_producao
-CREATE POLICY "Anyone can view ordens" ON ordens_producao
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can insert ordens" ON ordens_producao
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can update ordens" ON ordens_producao
-    FOR UPDATE USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can delete ordens" ON ordens_producao
-    FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "Anyone can view ordens" ON ordens_producao FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can insert ordens" ON ordens_producao FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can update ordens" ON ordens_producao FOR UPDATE USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can delete ordens" ON ordens_producao FOR DELETE USING (auth.uid() IS NOT NULL);
 
 -- Policies for comentarios
-CREATE POLICY "Anyone can view comentarios" ON comentarios
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can insert comentarios" ON comentarios
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can update comentarios" ON comentarios
-    FOR UPDATE USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can delete comentarios" ON comentarios
-    FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "Anyone can view comentarios" ON comentarios FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can insert comentarios" ON comentarios FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can update comentarios" ON comentarios FOR UPDATE USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can delete comentarios" ON comentarios FOR DELETE USING (auth.uid() IS NOT NULL);
 
 -- =============================================
 -- AUTO-CREATE PROFILE ON USER SIGNUP
 -- =============================================
 
--- Function to handle new user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -142,23 +122,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger to auto-create profile
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- =============================================
--- CREATE ADMIN USER
--- ATENÇÃO: O sistema agora usa LOGIN POR NOME DE USUÁRIO
+-- INSTRUCOES PARA CRIAR USUARIO ADMIN
 -- =============================================
-
--- Para criar o admin via Supabase Dashboard:
--- 1. Vá em Authentication > Users > Add User
--- 2. Email: admin@diario.local (ou qualquer email com formato: nomedousuario@diario.local)
--- 3. Defina uma senha
-
--- Depois execute este SQL para torná-lo admin:
--- UPDATE profiles SET role = 'admin', username = 'admin' WHERE email = 'admin@diario.local';
-
--- OU crie o admin diretamente via interface do sistema após executar este setup.
+-- 
+-- PASSO 1: No Supabase Dashboard, vá em:
+--   Authentication > Users > Add User
+-- 
+-- PASSO 2: Crie o usuário com:
+--   Email: admin@diario.agrosystem.local
+--   Password: (sua senha, mínimo 6 caracteres)
+-- 
+-- PASSO 3: Execute este SQL para torná-lo admin:
+--   UPDATE profiles 
+--   SET role = 'admin', username = 'admin' 
+--   WHERE email = 'admin@diario.agrosystem.local';
+-- 
+-- PASSO 4: Faça login com:
+--   Usuário: admin
+--   Senha: (a senha que você definiu)
+-- =============================================

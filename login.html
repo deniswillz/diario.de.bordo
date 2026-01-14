@@ -12,26 +12,33 @@
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Login Page Specific Styles */
-        .login-container {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #017e55 0%, #02a66d 50%, #03c981 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
             padding: 20px;
         }
 
         .login-card {
-            background: var(--white);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-xl);
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             overflow: hidden;
         }
 
         .login-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            background: linear-gradient(135deg, #017e55 0%, #02a66d 100%);
             padding: 32px 24px;
             text-align: center;
         }
@@ -42,7 +49,7 @@
         }
 
         .login-header h1 {
-            color: var(--white);
+            color: #ffffff;
             font-size: 1.5rem;
             font-weight: 600;
             margin: 0;
@@ -58,69 +65,72 @@
             padding: 32px 24px;
         }
 
-        .login-form .form-group {
+        .form-group {
             margin-bottom: 20px;
         }
 
-        .login-form label {
+        .form-group label {
             display: block;
             font-size: 0.875rem;
             font-weight: 500;
-            color: var(--gray-700);
+            color: #374151;
             margin-bottom: 8px;
         }
 
-        .login-form input {
+        .form-group input {
             width: 100%;
             padding: 12px 16px;
-            border: 1px solid var(--gray-200);
-            border-radius: var(--radius);
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
             font-size: 1rem;
-            transition: var(--transition);
+            font-family: inherit;
+            transition: all 0.2s ease;
         }
 
-        .login-form input:focus {
+        .form-group input:focus {
             outline: none;
-            border-color: var(--primary);
+            border-color: #017e55;
             box-shadow: 0 0 0 3px rgba(1, 126, 85, 0.1);
         }
 
-        .login-form .btn-login {
+        .btn-login {
             width: 100%;
             padding: 14px 24px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: var(--white);
+            background: linear-gradient(135deg, #017e55 0%, #02a66d 100%);
+            color: #ffffff;
             border: none;
-            border-radius: var(--radius);
+            border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
+            font-family: inherit;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
         }
 
-        .login-form .btn-login:hover {
+        .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 8px 20px rgba(1, 126, 85, 0.4);
         }
 
-        .login-form .btn-login:disabled {
+        .btn-login:disabled {
             opacity: 0.7;
             cursor: not-allowed;
             transform: none;
         }
 
         .login-error {
-            background: var(--danger-light);
-            color: var(--danger);
+            background: #fef2f2;
+            color: #dc2626;
             padding: 12px 16px;
-            border-radius: var(--radius);
+            border-radius: 8px;
             font-size: 0.875rem;
             margin-bottom: 20px;
             display: none;
+            border: 1px solid #fecaca;
         }
 
         .login-error.show {
@@ -130,12 +140,12 @@
         .login-footer {
             text-align: center;
             padding: 20px 24px;
-            background: var(--gray-50);
-            border-top: 1px solid var(--gray-100);
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
         }
 
         .login-footer p {
-            color: var(--gray-500);
+            color: #6b7280;
             font-size: 0.75rem;
         }
 
@@ -143,7 +153,7 @@
             width: 20px;
             height: 20px;
             border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: var(--white);
+            border-top-color: #ffffff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             display: none;
@@ -166,41 +176,39 @@
 </head>
 
 <body>
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <img src="https://static.wixstatic.com/media/4f1b82_35d422e5326947908f32849f5e4d3fef~mv2.png/v1/crop/x_8,y_0,w_1150,h_345/fill/w_204,h_52,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Marca_Agrosystem_marca_principal_branco.png"
-                    alt="Agrosystem" class="login-logo">
-                <h1>Diário de Bordo</h1>
-                <p>Sistema de controle de Notas e Ordens</p>
-            </div>
+    <div class="login-card">
+        <div class="login-header">
+            <img src="https://static.wixstatic.com/media/4f1b82_35d422e5326947908f32849f5e4d3fef~mv2.png/v1/crop/x_8,y_0,w_1150,h_345/fill/w_204,h_52,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Marca_Agrosystem_marca_principal_branco.png"
+                alt="Agrosystem" class="login-logo">
+            <h1>Diário de Bordo</h1>
+            <p>Sistema de controle de Notas e Ordens</p>
+        </div>
 
-            <div class="login-body">
-                <div class="login-error" id="loginError">
-                    Usuário ou senha inválidos. Por favor, tente novamente.
+        <div class="login-body">
+            <div class="login-error" id="loginError"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" name="username" placeholder="Digite seu usuário" required
+                        autocomplete="username">
                 </div>
 
-                <form class="login-form" id="loginForm">
-                    <div class="form-group">
-                        <label for="username">Usuário</label>
-                        <input type="text" id="username" name="username" placeholder="Seu nome de usuário" required>
-                    </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" placeholder="Digite sua senha" required
+                        autocomplete="current-password">
+                </div>
 
-                    <div class="form-group">
-                        <label for="password">Senha</label>
-                        <input type="password" id="password" name="password" placeholder="••••••••" required>
-                    </div>
+                <button type="submit" class="btn-login" id="btnLogin">
+                    <span class="btn-text">Entrar</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+        </div>
 
-                    <button type="submit" class="btn-login" id="btnLogin">
-                        <span class="btn-text">Entrar</span>
-                        <div class="spinner"></div>
-                    </button>
-                </form>
-            </div>
-
-            <div class="login-footer">
-                <p>© 2026 Agrosystem. Todos os direitos reservados.</p>
-            </div>
+        <div class="login-footer">
+            <p>© 2026 Agrosystem. Todos os direitos reservados.</p>
         </div>
     </div>
 
@@ -208,41 +216,78 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script>
+        // Elements
         const loginForm = document.getElementById('loginForm');
         const loginError = document.getElementById('loginError');
         const btnLogin = document.getElementById('btnLogin');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
 
-        // Check if already logged in
-        (async () => {
-            const user = await getCurrentUser();
-            if (user) {
-                window.location.href = 'LOGBOOK.html';
-            }
-        })();
+        // Show error message
+        function showError(message) {
+            loginError.textContent = message;
+            loginError.classList.add('show');
+        }
 
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-
-            // Show loading
-            btnLogin.classList.add('loading');
-            btnLogin.disabled = true;
+        // Hide error message
+        function hideError() {
             loginError.classList.remove('show');
+        }
 
-            try {
-                await signInWithUsername(username, password);
-                window.location.href = 'LOGBOOK.html';
-            } catch (error) {
-                console.error('Login error:', error);
-                loginError.textContent = error.message || 'Usuário ou senha inválidos. Por favor, tente novamente.';
-                loginError.classList.add('show');
-            } finally {
+        // Set loading state
+        function setLoading(loading) {
+            if (loading) {
+                btnLogin.classList.add('loading');
+                btnLogin.disabled = true;
+            } else {
                 btnLogin.classList.remove('loading');
                 btnLogin.disabled = false;
             }
+        }
+
+        // Check if already logged in
+        async function checkExistingSession() {
+            try {
+                const user = await getCurrentUser();
+                if (user) {
+                    console.log('Already logged in, redirecting...');
+                    window.location.href = 'index.html';
+                }
+            } catch (e) {
+                console.log('No existing session');
+            }
+        }
+
+        // Handle login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username || !password) {
+                showError('Por favor, preencha todos os campos');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                console.log('Attempting login for user:', username);
+                await signInWithUsername(username, password);
+                console.log('Login successful, redirecting...');
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Login failed:', error);
+                showError(error.message || 'Usuário ou senha inválidos');
+            } finally {
+                setLoading(false);
+            }
         });
+
+        // Check for existing session on page load
+        checkExistingSession();
     </script>
 </body>
 
