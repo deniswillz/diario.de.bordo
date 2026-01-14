@@ -435,7 +435,62 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Backup Section -->
+                <div class="admin-card" style="margin-top: 24px;">
+                    <div class="admin-card-header">
+                        <h2>💾 Backup do Sistema</h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                            <div>
+                                <p style="color: var(--gray-600); margin-bottom: 8px;">
+                                    <strong>Backup Automático:</strong> Ocorre todos os dias às 17:45.
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--gray-500);">
+                                    O sistema mantém os últimos 7 backups armazenados localmente no navegador.
+                                </p>
+                            </div>
+                            <div>
+                                <button id="btnManualBackup" class="btn-create" style="width: auto; background: var(--gray-800);">
+                                    Criar Backup Manual Agora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `;
+
+            // Setup Backup Button
+            document.getElementById('btnManualBackup').addEventListener('click', async () => {
+                const btn = document.getElementById('btnManualBackup');
+                const originalText = btn.textContent;
+
+                btn.disabled = true;
+                btn.textContent = 'Criando Backup...';
+
+                try {
+                    // Check if function exists globally (from supabase.js)
+                    if (window.createBackup) {
+                        const success = window.createBackup(true); // true = manual
+                        if (success) {
+                            showToastMessage('Backup criado com sucesso!');
+                        } else {
+                            showToastMessage('Erro ao criar backup', 'error');
+                        }
+                    } else {
+                        throw new Error('Função de backup não encontrada');
+                    }
+                } catch (error) {
+                    console.error('Backup error:', error);
+                    showToastMessage('Erro ao criar backup: ' + error.message, 'error');
+                } finally {
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                    }, 1000);
+                }
+            });
 
             // Load users
             await loadUsers();

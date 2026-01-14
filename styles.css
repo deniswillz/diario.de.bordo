@@ -1559,3 +1559,54 @@ body {
         padding: 12px;
     }
 }
+
+/* =============================================
+   NEW CALENDAR STATUS COLORS (USER REQUEST)
+   ============================================= */
+
+/* Crítico (> 3 dias) - Vermelho */
+.calendar-day.status-critical {
+    background: #FEE2E2 !important;
+    color: #EF4444 !important;
+    border: 1px solid #EF4444 !important;
+}
+
+/* Alerta (2 dias) - Laranja */
+.calendar-day.status-warning {
+    background: #FEF3C7 !important;
+    color: #F59E0B !important;
+    border: 1px solid #F59E0B !important;
+}
+
+/* Hoje (No dia) - Azul */
+.calendar-day.status-today {
+    background: #DBEAFE !important;
+    color: #2563EB !important;
+    border: 1px solid #3B82F6 !important;
+}
+
+/* Concluída - Verde */
+.calendar-day.status-complete {
+    background: #D1FAE5 !important;
+    color: #10B981 !important;
+    border: 1px solid #10B981 !important;
+}
+
+/* Popup Badges */
+.status-badge.critical {
+    background: #FEE2E2;
+    color: #EF4444;
+    border: 1px solid #EF4444;
+}
+
+.status-badge.warning {
+    background: #FEF3C7;
+    color: #F59E0B;
+    border: 1px solid #F59E0B;
+}
+
+.status-badge.today {
+    background: #DBEAFE;
+    color: #2563EB;
+    border: 1px solid #3B82F6;
+}

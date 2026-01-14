@@ -31,19 +31,26 @@ function formatDate(dateStr) {
     return date.toLocaleDateString('pt-BR');
 }
 
-// Get data from localStorage
+// Get data from global state (Cache)
 function getData(key) {
+    // key ex: 'diario_notas' -> 'notas'
     try {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
+        const prop = key.replace('diario_', '');
+        return state.data[prop] || [];
     } catch {
         return [];
     }
 }
 
-// Save data to localStorage
+// Deprecated: Save data to localStorage (Removed in favor of direct DB persistence)
 function saveData(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
+    // No-op: Data is saved directly to DB now
+    // Keep localstorage as backup if desired, but for now we rely on DB
+    // localStorage.setItem(key, JSON.stringify(data));
+
+    // Update local state immediately for optimistic UI
+    const prop = key.replace('diario_', '');
+    state.data[prop] = data;
 }
 
 // =============================================
@@ -56,8 +63,53 @@ const state = {
     currentYear: new Date().getFullYear(),
     selectedDate: getTodayDate(),
     editingItem: null,
-    deleteCallback: null
+    deleteCallback: null,
+    // Database Cache
+    data: {
+        notas: [],
+        ordens: [],
+        comentarios: []
+    }
 };
+
+// Async Data Refresh
+async function refreshData(payload) {
+    if (payload) console.log('🔄 Data change detected:', payload.eventType);
+
+    try {
+        const [notas, ordens, comentarios] = await Promise.all([
+            window.fetchNotas(),
+            window.fetchOrdens(),
+            window.fetchComentarios()
+        ]);
+
+        state.data.notas = notas || [];
+        state.data.ordens = ordens || [];
+        state.data.comentarios = comentarios || [];
+
+        // Refresh UI
+        state.data.notas = notas || [];
+        state.data.ordens = ordens || [];
+        state.data.comentarios = comentarios || [];
+
+        // Sync to LocalStorage (for Backup compatibility)
+        localStorage.setItem(STORAGE_KEYS.notas, JSON.stringify(state.data.notas));
+        localStorage.setItem(STORAGE_KEYS.ordens, JSON.stringify(state.data.ordens));
+        localStorage.setItem(STORAGE_KEYS.comentarios, JSON.stringify(state.data.comentarios));
+
+        // Update UI based on current section
+        if (state.currentSection === 'dashboard') updateDashboard();
+        else if (state.currentSection === 'notas') renderNotasList();
+        else if (state.currentSection === 'ordens') renderOrdensList();
+        else if (state.currentSection === 'comentarios') renderComentariosList();
+
+        renderCalendar();
+        updateAlerts();
+
+    } catch (e) {
+        console.error('Error refreshing data:', e);
+    }
+}
 
 // =============================================
 // DOM ELEMENTS
@@ -259,18 +311,48 @@ function renderCalendar() {
         const ordensOnDate = ordens.filter(o => o.data === dateStr);
         const comentariosOnDate = comentarios.filter(c => c.data === dateStr);
 
-        const hasPending = notasOnDate.some(n => ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status)) ||
-            ordensOnDate.some(o => o.status === 'Em Separação');
-        const hasComplete = (notasOnDate.some(n => n.status === 'Classificada') ||
-            ordensOnDate.some(o => o.status === 'Concluída')) && !hasPending;
+        // Lógica de Cores (User Request)
+        // Vermelho: > 3 dias atraso
+        // Laranja: >= 2 dias atraso
+        // Azul: No dia (Hoje)
+        // Verde: Classificada ou Concluída
+
+        const pendingNotas = notasOnDate.filter(n => ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status));
+        const pendingOrdens = ordensOnDate.filter(o => o.status === 'Em Separação');
+        const hasPending = pendingNotas.length > 0 || pendingOrdens.length > 0;
+
+        let statusClass = '';
+
+        if (hasPending) {
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const todayObj = new Date();
+            todayObj.setHours(0, 0, 0, 0);
+
+            // Diff em dias
+            const diffTime = todayObj.getTime() - dateObj.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 3) {
+                statusClass = 'status-critical';
+            } else if (diffDays >= 2) {
+                statusClass = 'status-warning';
+            } else if (diffDays === 0) {
+                statusClass = 'status-today';
+            } else if (diffDays === 1) {
+                statusClass = 'status-warning'; // Ontem também alerta
+            }
+        } else {
+            const hasComplete = (notasOnDate.some(n => n.status === 'Classificada') ||
+                ordensOnDate.some(o => o.status === 'Concluída'));
+            if (hasComplete) statusClass = 'status-complete';
+        }
+
         const hasComment = comentariosOnDate.length > 0;
 
-        let classes = 'calendar-day';
+        let classes = `calendar-day ${statusClass}`;
         if (dateStr === today) classes += ' today';
         if (dateStr === state.selectedDate) classes += ' selected';
-        if (hasPending) classes += ' has-pending';
-        else if (hasComplete) classes += ' has-complete';
-        else if (hasComment) classes += ' has-comment';
+        if (hasComment && !statusClass) classes += ' has-comment'; // Mantém roxo se só tiver comentário
 
         // Build counters HTML
         let countersHtml = '';
@@ -368,6 +450,28 @@ function closeDayPopup() {
     elements.dayPopupModal.classList.remove('show');
 }
 
+// Helper to get status color class based on time
+function getStatusColorClass(dateStr, status) {
+    if (['Classificada', 'Concluída'].includes(status)) {
+        return 'status-complete';
+    }
+
+    if (['Pendente', 'Em Conferência', 'Pré Nota', 'Em Separação'].includes(status)) {
+        const dateObj = new Date(dateStr + 'T00:00:00');
+        const todayObj = new Date();
+        todayObj.setHours(0, 0, 0, 0);
+        const diffTime = todayObj.getTime() - dateObj.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 3) return 'status-critical'; // Red
+        if (diffDays >= 2) return 'status-warning'; // Orange
+        if (diffDays === 1) return 'status-warning';
+        return 'status-today'; // Blue (Today)
+    }
+
+    return ''; // Default
+}
+
 function renderPopupNotas(notas) {
     if (notas.length === 0) {
         elements.popupNotasContent.innerHTML = `
@@ -383,7 +487,9 @@ function renderPopupNotas(notas) {
     }
 
     elements.popupNotasContent.innerHTML = notas.map(nota => {
-        const statusClass = nota.status.toLowerCase().replace(/\s+/g, '-').replace('é', 'e');
+        // Use custom color logic instead of generic class
+        const statusClass = `status-badge ${getStatusColorClass(nota.data, nota.status)}`;
+
         return `
             <div class="popup-item">
                 <div class="popup-item-info">
@@ -392,7 +498,7 @@ function renderPopupNotas(notas) {
                     ${nota.observacao ? `<div class="popup-item-meta" style="margin-top: 4px; font-style: italic;">"${nota.observacao}"</div>` : ''}
                 </div>
                 <div class="popup-item-status">
-                    <span class="status-badge ${statusClass}">${nota.status}</span>
+                    <span class="${statusClass}">${nota.status}</span>
                 </div>
             </div>
         `;
@@ -414,7 +520,8 @@ function renderPopupOrdens(ordens) {
     }
 
     elements.popupOrdensContent.innerHTML = ordens.map(ordem => {
-        const statusClass = ordem.status.toLowerCase().replace(/\s+/g, '-').replace('ã', 'a');
+        const statusClass = `status-badge ${getStatusColorClass(ordem.data, ordem.status)}`;
+
         return `
             <div class="popup-item">
                 <div class="popup-item-info">
@@ -423,7 +530,7 @@ function renderPopupOrdens(ordens) {
                     ${ordem.observacao ? `<div class="popup-item-meta" style="margin-top: 4px; font-style: italic;">"${ordem.observacao}"</div>` : ''}
                 </div>
                 <div class="popup-item-status">
-                    <span class="status-badge ${statusClass}">${ordem.status}</span>
+                    <span class="${statusClass}">${ordem.status}</span>
                 </div>
             </div>
         `;
@@ -453,7 +560,7 @@ function renderPopupComentarios(comentarios) {
     `).join('');
 }
 
-function addQuickObservation() {
+async function addQuickObservation() {
     const texto = elements.quickObsInput.value.trim();
     if (!texto) {
         showToast('Digite uma observação!', 'error');
@@ -461,24 +568,26 @@ function addQuickObservation() {
     }
 
     const comentario = {
-        id: generateId(),
         data: state.selectedDate,
-        texto: texto,
-        criadoEm: new Date().toISOString()
+        texto: texto
+        // id: generated by DB
     };
 
-    const comentarios = getData(STORAGE_KEYS.comentarios);
-    comentarios.push(comentario);
-    saveData(STORAGE_KEYS.comentarios, comentarios);
+    try {
+        await window.saveComentario(comentario);
+        await refreshData();
 
-    // Refresh popup
-    showDayPopup(state.selectedDate);
+        // Refresh UI
+        showDayPopup(state.selectedDate);
+        renderCalendar();
+        updateDashboard();
 
-    // Refresh calendar and dashboard
-    renderCalendar();
-    updateDashboard();
-
-    showToast('Observação adicionada!');
+        elements.quickObsInput.value = '';
+        showToast('Observação adicionada!');
+    } catch (e) {
+        console.error(e);
+        showToast('Erro ao adicionar observação', 'error');
+    }
 }
 
 // =============================================
@@ -631,51 +740,59 @@ function editNota(id) {
 }
 
 function deleteNota(id) {
-    showDeleteModal(() => {
-        let notas = getData(STORAGE_KEYS.notas);
-        notas = notas.filter(n => n.id !== id);
-        saveData(STORAGE_KEYS.notas, notas);
-        renderNotasList();
-        showToast('Nota excluída com sucesso!');
-        hideDeleteModal();
+    showDeleteModal(async () => {
+        try {
+            await window.deleteNota(id);
+            // Optimistic update
+            state.data.notas = state.data.notas.filter(n => n.id !== id);
+
+            renderNotasList();
+            showToast('Nota excluída com sucesso!');
+            hideDeleteModal();
+            updateAlerts(); // Atualiza alertas globalmente
+
+            // Full sync in background
+            refreshData();
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao excluir nota.', 'error');
+            hideDeleteModal();
+        }
     });
 }
 
-function saveNota(e) {
+async function saveNota(e) {
     e.preventDefault();
 
     const nota = {
-        id: elements.notaId.value || generateId(),
+        id: elements.notaId.value || undefined, // undefined deixa Supabase gerar UUID se create
         data: elements.notaData.value,
         numero: elements.notaNumero.value.trim(),
         fornecedor: elements.notaFornecedor.value.trim(),
         status: elements.notaStatus.value,
         tipo: elements.notaTipo.value,
         observacao: elements.notaObs.value.trim(),
-        criadoEm: state.editingItem?.criadoEm || new Date().toISOString()
+        // criadoEm: handled by DB
     };
 
-    // Check duplicates
-    const notas = getData(STORAGE_KEYS.notas);
-    const duplicate = notas.find(n => n.numero === nota.numero && n.id !== nota.id);
-
-    if (duplicate) {
-        showToast(`Nota ${nota.numero} já existe!`, 'error');
+    if (!nota.numero) {
+        showToast('Número da nota é obrigatório', 'error');
         return;
     }
 
-    // Save
-    const existingIndex = notas.findIndex(n => n.id === nota.id);
-    if (existingIndex >= 0) {
-        notas[existingIndex] = nota;
-    } else {
-        notas.push(nota);
-    }
+    try {
+        const saved = await window.saveNota(nota);
 
-    saveData(STORAGE_KEYS.notas, notas);
-    resetNotaForm();
-    renderNotasList();
-    showToast(existingIndex >= 0 ? 'Nota atualizada!' : 'Nota salva!');
+        // Optimistic refresh (or full fetch)
+        await refreshData();
+
+        resetNotaForm();
+        renderNotasList();
+        showToast(elements.notaId.value ? 'Nota atualizada!' : 'Nota salva!');
+    } catch (e) {
+        console.error(e);
+        showToast('Erro ao salvar nota.', 'error');
+    }
 }
 
 function renderNotasList() {
@@ -701,7 +818,7 @@ function renderNotasList() {
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                 </svg>
-                <p>Nenhuma nota fiscal encontrada</p>
+                <p>Nenhuma nota encontrada</p>
             </div>
         `;
         return;
@@ -709,39 +826,34 @@ function renderNotasList() {
 
     elements.notasList.innerHTML = filtered.map(nota => {
         const statusClass = nota.status.toLowerCase().replace(/\s+/g, '-').replace('é', 'e');
-        const days = calculateDaysPending(nota.data);
-        const isOld = days >= 3 && ['Pendente', 'Em Conferência', 'Pré Nota'].includes(nota.status);
-
         return `
-            <div class="list-item ${isOld ? 'alert-item' : ''}">
-                <div class="list-item-info">
-                    <span class="list-item-title">Nota ${nota.numero}</span>
-                    <div class="list-item-meta">
-                        <span>${formatDate(nota.data)}</span>
-                        ${nota.fornecedor ? `<span>${nota.fornecedor}</span>` : ''}
-                        ${nota.tipo ? `<span>${nota.tipo}</span>` : ''}
-                    </div>
-                </div>
-                <div class="list-item-status">
-                    <span class="status-badge ${statusClass}">${nota.status}</span>
-                </div>
-                <div class="list-item-actions">
-                    <button class="btn-icon" onclick="editNota('${nota.id}')" title="Editar">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="btn-icon delete" onclick="deleteNota('${nota.id}')" title="Excluir">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
+        <div class="list-item">
+            <div class="list-item-info">
+                <span class="list-item-title">Nota ${nota.numero}</span>
+                <div class="list-item-meta">
+                    <span>${formatDate(nota.data)}</span>
+                    <span>•</span>
+                    <span>${nota.fornecedor || 'Sem fornecedor'}</span>
+                    ${nota.tipo ? `<span>• ${nota.tipo}</span>` : ''}
                 </div>
             </div>
-        `;
-    }).join('');
+            <div class="list-item-actions">
+                <span class="status-badge ${statusClass}">${nota.status}</span>
+                <button class="btn-icon" onclick="editNota('${nota.id}')" title="Editar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="btn-icon delete" onclick="deleteNota('${nota.id}')" title="Excluir">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `}).join('');
 }
 
 // =============================================
@@ -775,50 +887,52 @@ function editOrdem(id) {
 }
 
 function deleteOrdem(id) {
-    showDeleteModal(() => {
-        let ordens = getData(STORAGE_KEYS.ordens);
-        ordens = ordens.filter(o => o.id !== id);
-        saveData(STORAGE_KEYS.ordens, ordens);
-        renderOrdensList();
-        showToast('Ordem excluída com sucesso!');
-        hideDeleteModal();
+    showDeleteModal(async () => {
+        try {
+            await window.deleteOrdem(id);
+            state.data.ordens = state.data.ordens.filter(o => o.id !== id);
+
+            renderOrdensList();
+            showToast('Ordem excluída com sucesso!');
+            hideDeleteModal();
+            updateAlerts();
+            refreshData();
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao excluir ordem.', 'error');
+            hideDeleteModal();
+        }
     });
 }
 
-function saveOrdem(e) {
+async function saveOrdem(e) {
     e.preventDefault();
 
     const ordem = {
-        id: elements.ordemId.value || generateId(),
+        id: elements.ordemId.value || undefined,
         data: elements.ordemData.value,
         numero: elements.ordemNumero.value.trim(),
         documento: elements.ordemDocumento.value.trim(),
         status: elements.ordemStatus.value,
         observacao: elements.ordemObs.value.trim(),
-        criadoEm: state.editingItem?.criadoEm || new Date().toISOString()
     };
 
-    // Check duplicates
-    const ordens = getData(STORAGE_KEYS.ordens);
-    const duplicate = ordens.find(o => o.numero === ordem.numero && o.id !== ordem.id);
-
-    if (duplicate) {
-        showToast(`Ordem ${ordem.numero} já existe!`, 'error');
+    if (!ordem.numero) {
+        showToast('Número da ordem é obrigatório', 'error');
         return;
     }
 
-    // Save
-    const existingIndex = ordens.findIndex(o => o.id === ordem.id);
-    if (existingIndex >= 0) {
-        ordens[existingIndex] = ordem;
-    } else {
-        ordens.push(ordem);
-    }
+    try {
+        await window.saveOrdem(ordem);
+        await refreshData();
 
-    saveData(STORAGE_KEYS.ordens, ordens);
-    resetOrdemForm();
-    renderOrdensList();
-    showToast(existingIndex >= 0 ? 'Ordem atualizada!' : 'Ordem salva!');
+        resetOrdemForm();
+        renderOrdensList();
+        showToast(elements.ordemId.value ? 'Ordem atualizada!' : 'Ordem salva!');
+    } catch (e) {
+        console.error(e);
+        showToast('Erro ao salvar ordem.', 'error');
+    }
 }
 
 function renderOrdensList() {
@@ -844,7 +958,7 @@ function renderOrdensList() {
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <p>Nenhuma ordem de produção encontrada</p>
+                <p>Nenhuma ordem encontrada</p>
             </div>
         `;
         return;
@@ -852,38 +966,32 @@ function renderOrdensList() {
 
     elements.ordensList.innerHTML = filtered.map(ordem => {
         const statusClass = ordem.status.toLowerCase().replace(/\s+/g, '-').replace('ã', 'a');
-        const days = calculateDaysPending(ordem.data);
-        const isOld = days >= 3 && ordem.status === 'Em Separação';
-
         return `
-            <div class="list-item ${isOld ? 'alert-item' : ''}">
-                <div class="list-item-info">
-                    <span class="list-item-title">Ordem ${ordem.numero}</span>
-                    <div class="list-item-meta">
-                        <span>${formatDate(ordem.data)}</span>
-                        ${ordem.documento ? `<span>Doc: ${ordem.documento}</span>` : ''}
-                    </div>
-                </div>
-                <div class="list-item-status">
-                    <span class="status-badge ${statusClass}">${ordem.status}</span>
-                </div>
-                <div class="list-item-actions">
-                    <button class="btn-icon" onclick="editOrdem('${ordem.id}')" title="Editar">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="btn-icon delete" onclick="deleteOrdem('${ordem.id}')" title="Excluir">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
+        <div class="list-item">
+            <div class="list-item-info">
+                <span class="list-item-title">Ordem ${ordem.numero}</span>
+                <div class="list-item-meta">
+                    <span>${formatDate(ordem.data)}</span>
+                    ${ordem.documento ? `<span>• Doc: ${ordem.documento}</span>` : ''}
                 </div>
             </div>
-        `;
-    }).join('');
+            <div class="list-item-actions">
+                <span class="status-badge ${statusClass}">${ordem.status}</span>
+                <button class="btn-icon" onclick="editOrdem('${ordem.id}')" title="Editar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="btn-icon delete" onclick="deleteOrdem('${ordem.id}')" title="Excluir">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `}).join('');
 }
 
 // =============================================
@@ -914,40 +1022,44 @@ function editComentario(id) {
 }
 
 function deleteComentario(id) {
-    showDeleteModal(() => {
-        let comentarios = getData(STORAGE_KEYS.comentarios);
-        comentarios = comentarios.filter(c => c.id !== id);
-        saveData(STORAGE_KEYS.comentarios, comentarios);
-        renderComentariosList();
-        showToast('Comentário excluído com sucesso!');
-        hideDeleteModal();
+    showDeleteModal(async () => {
+        try {
+            await window.deleteComentario(id);
+            state.data.comentarios = state.data.comentarios.filter(c => c.id !== id);
+
+            renderComentariosList();
+            showToast('Comentário excluído com sucesso!');
+            hideDeleteModal();
+            refreshData();
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao excluir comentário.', 'error');
+            hideDeleteModal();
+        }
     });
 }
 
-function saveComentario(e) {
+async function saveComentario(e) {
     e.preventDefault();
 
     const comentario = {
-        id: elements.comentarioId.value || generateId(),
+        id: elements.comentarioId.value || undefined,
         data: elements.comentarioData.value,
         texto: elements.comentarioTexto.value.trim(),
-        criadoEm: state.editingItem?.criadoEm || new Date().toISOString()
+        // criadoEm handled by DB
     };
 
-    const comentarios = getData(STORAGE_KEYS.comentarios);
+    try {
+        await window.saveComentario(comentario);
+        await refreshData();
 
-    // Save
-    const existingIndex = comentarios.findIndex(c => c.id === comentario.id);
-    if (existingIndex >= 0) {
-        comentarios[existingIndex] = comentario;
-    } else {
-        comentarios.push(comentario);
+        resetComentarioForm();
+        renderComentariosList();
+        showToast(elements.comentarioId.value ? 'Comentário atualizado!' : 'Comentário salvo!');
+    } catch (e) {
+        console.error(e);
+        showToast('Erro ao salvar comentário.', 'error');
     }
-
-    saveData(STORAGE_KEYS.comentarios, comentarios);
-    resetComentarioForm();
-    renderComentariosList();
-    showToast(existingIndex >= 0 ? 'Comentário atualizado!' : 'Comentário salvo!');
 }
 
 function renderComentariosList() {
@@ -1098,7 +1210,7 @@ function initEventListeners() {
 // INITIALIZATION
 // =============================================
 
-function init() {
+async function init() {
     // Set current date in header
     const today = new Date();
     elements.currentDate.textContent = today.toLocaleDateString('pt-BR', {
@@ -1115,8 +1227,21 @@ function init() {
     // Initialize event listeners
     initEventListeners();
 
+    // Load data from Supabase
+    try {
+        console.log('Loading data...');
+        await refreshData();
+
+        // Subscribe to changes
+        if (window.subscribeToChanges) {
+            window.subscribeToChanges(refreshData);
+        }
+    } catch (e) {
+        console.error('Initial load failed:', e);
+    }
+
     // Load dashboard
-    updateDashboard();
+    navigateTo('dashboard');
 
     console.log('Diário de Bordo inicializado!');
 }
