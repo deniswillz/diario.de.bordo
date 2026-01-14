@@ -135,13 +135,13 @@ CREATE TRIGGER on_auth_user_created
 --   Authentication > Users > Add User
 -- 
 -- PASSO 2: Crie o usuário com:
---   Email: admin@diario.agrosystem.local
+--   Email: admin@diarioagro.app
 --   Password: (sua senha, mínimo 6 caracteres)
 -- 
 -- PASSO 3: Execute este SQL para torná-lo admin:
 --   UPDATE profiles 
 --   SET role = 'admin', username = 'admin' 
---   WHERE email = 'admin@diario.agrosystem.local';
+--   WHERE email = 'admin@diarioagro.app';
 -- 
 -- PASSO 4: Faça login com:
 --   Usuário: admin
