@@ -1,5 +1,5 @@
 /* =============================================
-   SUPABASE CONFIGURATION
+   SUPABASE CONFIGURATION & SIMPLE AUTH
    Diário de Bordo - Agrosystem
    ============================================= */
 
@@ -17,135 +17,108 @@ function getSupabase() {
 }
 
 // =============================================
-// AUTHENTICATION
+// SIMPLE AUTHENTICATION (Custom Implementation)
 // =============================================
 
-// Convert username to email format for Supabase (using valid domain)
-function usernameToEmail(username) {
-    // Use @diario.app which is a valid format Supabase accepts
-    return `${username.toLowerCase().trim().replace(/\s+/g, '.')}@diarioagro.app`;
-}
-
-// Sign in with username and password
+// Sign in with username and password (checks 'users' table)
 async function signInWithUsername(username, password) {
     const supabase = getSupabase();
     if (!supabase) throw new Error('Supabase não inicializado');
 
-    const email = usernameToEmail(username);
-    console.log('Attempting login with email:', email);
+    console.log('Attempting login for:', username);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
-    });
+    // Query users table directly
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password) // Simple check
+        .single();
 
-    if (error) {
-        console.error('Login error:', error);
+    if (error || !data) {
+        console.error('Login failed:', error);
         throw new Error('Usuário ou senha inválidos');
     }
 
-    console.log('Login successful');
+    console.log('Login successful:', data.username);
+
+    // Store user session in localStorage (Simple Session)
+    localStorage.setItem('diario_user', JSON.stringify(data));
+
     return data;
 }
 
-// Sign up with username and password
+// Sign up new user (creates row in 'users' table)
 async function signUpWithUsername(username, password, role = 'operador') {
     const supabase = getSupabase();
     if (!supabase) throw new Error('Supabase não inicializado');
 
-    const email = usernameToEmail(username);
-    console.log('Creating user with email:', email);
+    console.log('Creating user:', username);
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-            data: {
-                name: username,
-                role: role
-            }
-        }
-    });
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .single();
 
-    if (authError) {
-        console.error('Signup error:', authError);
-        if (authError.message.includes('already registered')) {
-            throw new Error('Este usuário já existe');
-        }
-        throw new Error('Erro ao criar usuário: ' + authError.message);
+    if (existingUser) {
+        throw new Error('Este usuário já existe');
     }
 
-    // Wait for trigger
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Update profile
-    const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-            username: username.toLowerCase().trim(),
+    // Insert new user
+    const { data, error } = await supabase
+        .from('users')
+        .insert([{
+            username: username,
+            password: password,
+            name: username, // Default name to username
             role: role
-        })
-        .eq('id', authData.user.id);
+        }])
+        .select()
+        .single();
 
-    if (profileError) {
-        console.warn('Profile update warning:', profileError);
+    if (error) {
+        console.error('Signup error:', error);
+        throw new Error('Erro ao criar usuário: ' + error.message);
     }
 
-    return authData;
+    return data;
 }
 
 // Sign out
 async function signOut() {
-    const supabase = getSupabase();
-    if (supabase) {
-        await supabase.auth.signOut();
-    }
+    // Clear local session
+    localStorage.removeItem('diario_user');
+    localStorage.removeItem('diario_guest_mode');
     window.location.href = 'login.html';
 }
 
-// Get current user
+// Get current logged in user from localStorage
 async function getCurrentUser() {
-    const supabase = getSupabase();
-    if (!supabase) return null;
+    const userStr = localStorage.getItem('diario_user');
+    if (!userStr) return null;
 
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        return user;
+        return JSON.parse(userStr);
     } catch (e) {
         return null;
     }
 }
 
-// Get current profile
+// Get current profile (Same as user in this refined system)
 async function getCurrentProfile() {
-    const supabase = getSupabase();
-    if (!supabase) return null;
-
-    const user = await getCurrentUser();
-    if (!user) return null;
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-    if (error) {
-        console.error('Profile fetch error:', error);
-        return null;
-    }
-
-    return data;
+    return getCurrentUser();
 }
 
 // Check if admin
 async function isAdmin() {
-    const profile = await getCurrentProfile();
-    return profile?.role === 'admin';
+    const user = await getCurrentUser();
+    return user?.role === 'admin';
 }
 
 // =============================================
-// USER MANAGEMENT
+// USER MANAGEMENT (Admin only)
 // =============================================
 
 async function getAllUsers() {
@@ -153,7 +126,7 @@ async function getAllUsers() {
     if (!supabase) return [];
 
     const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -166,74 +139,40 @@ async function getAllUsers() {
 // =============================================
 
 const BACKUP_KEY = 'diario_backups';
-const BACKUP_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
+const BACKUP_INTERVAL = 60 * 60 * 1000; // 1 hour
 
-// Create backup of all data
+// Create backup
 function createBackup() {
-    const backup = {
-        timestamp: new Date().toISOString(),
-        data: {
-            notas: localStorage.getItem('diario_notas') || '[]',
-            ordens: localStorage.getItem('diario_ordens') || '[]',
-            comentarios: localStorage.getItem('diario_comentarios') || '[]'
-        }
-    };
+    try {
+        const backup = {
+            timestamp: new Date().toISOString(),
+            data: {
+                notas: localStorage.getItem('diario_notas') || '[]',
+                ordens: localStorage.getItem('diario_ordens') || '[]',
+                comentarios: localStorage.getItem('diario_comentarios') || '[]'
+            }
+        };
 
-    // Get existing backups
-    let backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]');
+        let backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]');
+        backups.unshift(backup);
+        backups = backups.slice(0, 24); // Keep last 24
 
-    // Add new backup
-    backups.unshift(backup);
-
-    // Keep only last 24 backups (24 hours)
-    backups = backups.slice(0, 24);
-
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(backups));
-    console.log('Backup criado:', backup.timestamp);
-
-    return backup;
-}
-
-// Get all backups
-function getBackups() {
-    return JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]');
-}
-
-// Restore from backup
-function restoreBackup(index) {
-    const backups = getBackups();
-    if (index < 0 || index >= backups.length) {
-        throw new Error('Backup não encontrado');
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(backups));
+        console.log('Backup criado:', backup.timestamp);
+        return backup;
+    } catch (e) {
+        console.error('Backup failed:', e);
     }
-
-    const backup = backups[index];
-
-    // Restore data
-    localStorage.setItem('diario_notas', backup.data.notas);
-    localStorage.setItem('diario_ordens', backup.data.ordens);
-    localStorage.setItem('diario_comentarios', backup.data.comentarios);
-
-    console.log('Backup restaurado:', backup.timestamp);
-    return backup;
 }
 
-// Start automatic backup
-function startAutoBackup() {
-    // Create initial backup
-    createBackup();
-
-    // Set interval for automatic backups
-    setInterval(() => {
-        createBackup();
-    }, BACKUP_INTERVAL);
-
-    console.log('Auto-backup iniciado (a cada 1 hora)');
-}
-
-// Initialize backup on load
+// Start auto backup
 if (typeof window !== 'undefined') {
     window.addEventListener('load', () => {
-        startAutoBackup();
+        setInterval(createBackup, BACKUP_INTERVAL);
+        // Create initial backup if none exists
+        if (!localStorage.getItem(BACKUP_KEY)) {
+            createBackup();
+        }
     });
 }
 
@@ -242,5 +181,5 @@ if (typeof window !== 'undefined') {
 // =============================================
 
 async function migrateDataToSupabase() {
-    console.log('Migration check complete');
+    console.log('System ready (Simple Auth Mode)');
 }
