@@ -25,27 +25,34 @@ async function signInWithUsername(username, password) {
     const supabase = getSupabase();
     if (!supabase) throw new Error('Supabase não inicializado');
 
-    console.log('Attempting login for:', username);
+    // Normalize username
+    const safeUsername = username.toLowerCase().trim();
+    console.log('Attempting login for:', safeUsername);
 
-    // Query users table directly
-    const { data, error } = await supabase
+    // 1. First check if user exists
+    const { data: user, error: userError } = await supabase
         .from('users')
         .select('*')
-        .eq('username', username)
-        .eq('password', password) // Simple check
+        .eq('username', safeUsername)
         .single();
 
-    if (error || !data) {
-        console.error('Login failed:', error);
-        throw new Error('Usuário ou senha inválidos');
+    if (userError || !user) {
+        console.error('User not found:', userError);
+        throw new Error('Usuário não encontrado. Verifique se criou a tabela "users".');
     }
 
-    console.log('Login successful:', data.username);
+    // 2. Check password
+    if (user.password !== password) {
+        console.error('Wrong password for user:', safeUsername);
+        throw new Error('Senha incorreta.');
+    }
+
+    console.log('Login successful:', user.username);
 
     // Store user session in localStorage (Simple Session)
-    localStorage.setItem('diario_user', JSON.stringify(data));
+    localStorage.setItem('diario_user', JSON.stringify(user));
 
-    return data;
+    return user;
 }
 
 // Sign up new user (creates row in 'users' table)

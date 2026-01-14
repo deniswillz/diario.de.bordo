@@ -82,8 +82,9 @@ CREATE POLICY "Public Access Comentarios" ON public.comentarios FOR ALL USING (t
 -- =============================================
 
 INSERT INTO public.users (username, password, name, role)
-VALUES ('admin', '12dfe', 'Administrador', 'admin')
-ON CONFLICT (username) DO NOTHING;
+VALUES ('admin', '12dfe13dfe', 'Administrador', 'admin')
+ON CONFLICT (username) 
+DO UPDATE SET password = '12dfe13dfe'; -- Garante que a senha seja atualizada se já existir
 
 -- =============================================
 -- MENSAGEM DE SUCESSO
@@ -91,4 +92,4 @@ ON CONFLICT (username) DO NOTHING;
 -- Selecione tudo e clique em RUN.
 -- Se der sucesso, o usuário admin já estará criado!
 -- Login: admin
--- Senha: 12dfe
+-- Senha: 12dfe13dfe
