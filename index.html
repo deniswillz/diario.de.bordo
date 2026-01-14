@@ -507,7 +507,7 @@
     <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script>
-        // Auth and user initialization - REQUIRED LOGIN
+        // Auth and user initialization - SUPPORTS GUEST MODE
         (async function () {
             // Get elements
             const userInfoHeader = document.getElementById('userInfoHeader');
@@ -515,17 +515,53 @@
             const adminLink = document.getElementById('adminLink');
             const logoutBtn = document.getElementById('logoutBtn');
 
-            // Check auth - LOGIN REQUIRED
+            // Check if guest mode
+            const isGuestMode = localStorage.getItem('diario_guest_mode') === 'true';
+
+            if (isGuestMode) {
+                // GUEST MODE - Read only
+                console.log('Guest mode active');
+                window.userRole = 'guest';
+                window.isAdmin = false;
+                window.isGuest = true;
+
+                // Show guest indicator
+                userInfoHeader.style.display = 'flex';
+                userNameEl.textContent = '👁️ Visitante';
+                userNameEl.style.color = '#6b7280';
+
+                // Change logout button to login button
+                logoutBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <polyline points="10 17 15 12 10 7"></polyline>
+                        <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                `;
+                logoutBtn.title = 'Fazer Login';
+                logoutBtn.addEventListener('click', () => {
+                    localStorage.removeItem('diario_guest_mode');
+                    window.location.href = 'login.html';
+                });
+
+                // Hide all editing for guests
+                hideEditingForOperators();
+                return;
+            }
+
+            // Check auth for logged users
             try {
                 const profile = await getCurrentProfile();
 
-                // If no profile, redirect to login
+                // If no profile and not guest, redirect to login
                 if (!profile) {
                     window.location.href = 'login.html';
                     return;
                 }
 
                 // User is logged in
+                window.isGuest = false;
                 userInfoHeader.style.display = 'flex';
                 userNameEl.textContent = profile.name;
 

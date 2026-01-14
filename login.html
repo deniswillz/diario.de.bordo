@@ -205,12 +205,61 @@
                     <div class="spinner"></div>
                 </button>
             </form>
+
+            <div class="login-divider">
+                <span>ou</span>
+            </div>
+
+            <button type="button" class="btn-guest" id="btnGuest">
+                👁️ Continuar sem Login (Somente Visualização)
+            </button>
         </div>
 
         <div class="login-footer">
             <p>© 2026 Agrosystem. Todos os direitos reservados.</p>
         </div>
     </div>
+
+    <style>
+        .login-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .login-divider span {
+            padding: 0 16px;
+        }
+
+        .btn-guest {
+            width: 100%;
+            padding: 12px 24px;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-guest:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+    </style>
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -276,6 +325,8 @@
             try {
                 console.log('Attempting login for user:', username);
                 await signInWithUsername(username, password);
+                // Remove guest mode if was set
+                localStorage.removeItem('diario_guest_mode');
                 console.log('Login successful, redirecting...');
                 window.location.href = 'index.html';
             } catch (error) {
@@ -284,6 +335,14 @@
             } finally {
                 setLoading(false);
             }
+        });
+
+        // Handle guest mode button
+        document.getElementById('btnGuest').addEventListener('click', () => {
+            // Set guest mode flag
+            localStorage.setItem('diario_guest_mode', 'true');
+            console.log('Entering as guest...');
+            window.location.href = 'index.html';
         });
 
         // Check for existing session on page load
