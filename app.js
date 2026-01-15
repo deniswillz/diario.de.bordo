@@ -782,6 +782,15 @@ async function handleSaveNota(e) {
         return;
     }
 
+    // Check duplicates locally
+    if (!nota.id) {
+        const duplicada = state.data.notas.find(n => n.numero === nota.numero);
+        if (duplicada) {
+            showToast(`Já existe uma nota com o número ${nota.numero}!`, 'error');
+            return;
+        }
+    }
+
     try {
         const saved = await window.saveNota(nota);
 
@@ -792,8 +801,13 @@ async function handleSaveNota(e) {
         renderNotasList();
         showToast(elements.notaId.value ? 'Nota atualizada!' : 'Nota salva!');
     } catch (e) {
-        console.error(e);
-        showToast('Erro ao salvar nota.', 'error');
+        console.error('Save error details:', e);
+        const msg = e.message || 'Erro desconhecido ao salvar';
+        if (e.code === '23505' || e.status === 409) {
+            showToast(`Erro de Conflito: Nota duplicada.`, 'error');
+        } else {
+            showToast(`Erro: ${msg}`, 'error');
+        }
     }
 }
 
@@ -926,6 +940,15 @@ async function handleSaveOrdem(e) {
         return;
     }
 
+    // Check duplicates locally
+    if (!ordem.id) {
+        const duplicada = state.data.ordens.find(o => o.numero === ordem.numero);
+        if (duplicada) {
+            showToast(`Já existe uma ordem com o número ${ordem.numero}!`, 'error');
+            return;
+        }
+    }
+
     try {
         await window.saveOrdem(ordem);
         await refreshData();
@@ -934,8 +957,13 @@ async function handleSaveOrdem(e) {
         renderOrdensList();
         showToast(elements.ordemId.value ? 'Ordem atualizada!' : 'Ordem salva!');
     } catch (e) {
-        console.error(e);
-        showToast('Erro ao salvar ordem.', 'error');
+        console.error('Save error details:', e);
+        const msg = e.message || 'Erro desconhecido ao salvar';
+        if (e.code === '23505' || e.status === 409) {
+            showToast(`Erro de Conflito: Ordem duplicada.`, 'error');
+        } else {
+            showToast(`Erro: ${msg}`, 'error');
+        }
     }
 }
 
