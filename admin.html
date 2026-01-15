@@ -416,6 +416,7 @@
                                     <label for="userRole">Perfil</label>
                                     <select id="userRole" required>
                                         <option value="operador">Operador</option>
+                                        <option value="editor">Editor</option>
                                         <option value="admin">Administrador</option>
                                     </select>
                                 </div>
@@ -541,6 +542,7 @@
                                 ${user.username === 'admin' ? 'disabled' : ''}
                                 style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--gray-300);">
                                 <option value="operador" ${user.role === 'operador' ? 'selected' : ''}>Operador</option>
+                                <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
                                 <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                             </select>
                         </div>

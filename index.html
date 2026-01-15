@@ -571,8 +571,10 @@
 
                 if (profile.role === 'admin') {
                     adminLink.style.display = 'flex';
-                } else {
-                    // OPERATOR: Hide all edit forms and action buttons
+                }
+
+                // OPERATOR/GUEST: Hide editing if not admin AND not editor
+                if (profile.role !== 'admin' && profile.role !== 'editor') {
                     hideEditingForOperators();
                 }
 
