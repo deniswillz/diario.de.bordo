@@ -1,0 +1,5 @@
+{
+  "name": "Diário de Bordo - Agrosystem Pro",
+  "description": "A high-end management system for tracking invoices (Notas Fiscais) and production orders (Ordens de Produção), featuring real-time synchronization, smart analysis via Gemini, and a responsive industrial-grade UI.",
+  "requestFramePermissions": []
+}
