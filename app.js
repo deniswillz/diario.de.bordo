@@ -104,7 +104,7 @@ async function refreshData(payload) {
         else if (state.currentSection === 'comentarios') renderComentariosList();
 
         renderCalendar();
-        updateAlerts();
+        renderAlerts();
 
     } catch (e) {
         console.error('Error refreshing data:', e);
@@ -749,7 +749,7 @@ function deleteNota(id) {
             renderNotasList();
             showToast('Nota excluída com sucesso!');
             hideDeleteModal();
-            updateAlerts(); // Atualiza alertas globalmente
+            renderAlerts(); // Atualiza alertas globalmente
 
             // Full sync in background
             refreshData();
@@ -761,8 +761,10 @@ function deleteNota(id) {
     });
 }
 
-async function saveNota(e) {
-    e.preventDefault();
+async function handleSaveNota(e) {
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
 
     const nota = {
         id: elements.notaId.value || undefined, // undefined deixa Supabase gerar UUID se create
@@ -895,7 +897,7 @@ function deleteOrdem(id) {
             renderOrdensList();
             showToast('Ordem excluída com sucesso!');
             hideDeleteModal();
-            updateAlerts();
+            renderAlerts();
             refreshData();
         } catch (e) {
             console.error(e);
@@ -905,8 +907,10 @@ function deleteOrdem(id) {
     });
 }
 
-async function saveOrdem(e) {
-    e.preventDefault();
+async function handleSaveOrdem(e) {
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
 
     const ordem = {
         id: elements.ordemId.value || undefined,
@@ -1039,8 +1043,10 @@ function deleteComentario(id) {
     });
 }
 
-async function saveComentario(e) {
-    e.preventDefault();
+async function handleSaveComentario(e) {
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
 
     const comentario = {
         id: elements.comentarioId.value || undefined,
@@ -1134,19 +1140,19 @@ function initEventListeners() {
     elements.nextMonth.addEventListener('click', nextMonth);
 
     // Notas form
-    elements.notaForm.addEventListener('submit', saveNota);
+    elements.notaForm.addEventListener('submit', handleSaveNota);
     elements.notaCancelar.addEventListener('click', resetNotaForm);
     elements.notaSearch.addEventListener('input', renderNotasList);
     elements.notaFilterStatus.addEventListener('change', renderNotasList);
 
     // Ordens form
-    elements.ordemForm.addEventListener('submit', saveOrdem);
+    elements.ordemForm.addEventListener('submit', handleSaveOrdem);
     elements.ordemCancelar.addEventListener('click', resetOrdemForm);
     elements.ordemSearch.addEventListener('input', renderOrdensList);
     elements.ordemFilterStatus.addEventListener('change', renderOrdensList);
 
     // Comentarios form
-    elements.comentarioForm.addEventListener('submit', saveComentario);
+    elements.comentarioForm.addEventListener('submit', handleSaveComentario);
     elements.comentarioCancelar.addEventListener('click', resetComentarioForm);
     elements.comentarioSearch.addEventListener('input', renderComentariosList);
 

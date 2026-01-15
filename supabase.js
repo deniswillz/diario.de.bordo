@@ -183,23 +183,53 @@ window.getBackups = function () {
 };
 
 // Restore backup
-window.restoreBackup = function (backupIndex) {
+// Restore backup to Cloud (Merge Strategy)
+window.restoreBackup = async function (backupIndex) {
     try {
         const backups = window.getBackups();
         const backup = backups[backupIndex];
 
         if (!backup) throw new Error('Backup não encontrado');
 
+        const notas = JSON.parse(backup.data.notas || '[]');
+        const ordens = JSON.parse(backup.data.ordens || '[]');
+        const comentarios = JSON.parse(backup.data.comentarios || '[]');
+
+        console.log(`Restaurando ${notas.length} notas, ${ordens.length} ordens...`);
+
+        const supabase = getSupabase();
+
+        // Batch Upsert
+        if (notas.length) await supabase.from('notas_fiscais').upsert(notas);
+        if (ordens.length) await supabase.from('ordens_producao').upsert(ordens);
+        if (comentarios.length) await supabase.from('comentarios').upsert(comentarios);
+
+        // Also restore local storage just in case
         localStorage.setItem('diario_notas', backup.data.notas);
         localStorage.setItem('diario_ordens', backup.data.ordens);
         localStorage.setItem('diario_comentarios', backup.data.comentarios);
 
-        console.log('Backup restaurado com sucesso');
+        console.log('Backup restaurado para a nuvem com sucesso');
         return true;
     } catch (e) {
         console.error('Restore failed:', e);
         return false;
     }
+};
+
+// Update User Role (Admin only)
+window.updateUserRole = async function (userId, newRole) {
+    const supabase = getSupabase();
+    const { error } = await supabase
+        .from('users')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+    if (error) {
+        console.error('Error updating role:', error);
+        return false;
+    }
+    return true;
 };
 
 // Start auto backup scheduler

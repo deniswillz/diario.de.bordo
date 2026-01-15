@@ -457,6 +457,11 @@
                                 </button>
                             </div>
                         </div>
+                        
+                        <h3 style="margin-top: 20px; font-size: 1rem; color: var(--gray-700); border-top: 1px solid var(--gray-200); padding-top: 15px;">Histórico de Backups</h3>
+                        <div class="users-list" id="backupsList" style="margin-top: 10px;">
+                            <!-- Backups loaded here -->
+                        </div>
                     </div>
                 </div>
             `;
@@ -494,6 +499,7 @@
 
             // Load users
             await loadUsers();
+            renderBackupsList();
 
             // Setup form handler
             document.getElementById('createUserForm').addEventListener('submit', handleCreateUser);
@@ -529,7 +535,15 @@
                                 <p>@${user.username || user.name.toLowerCase().replace(/\s+/g, '_')}</p>
                             </div>
                         </div>
-                        <span class="user-role ${user.role}">${user.role}</span>
+                        <div class="user-actions">
+                            <select class="role-select" 
+                                onchange="changeUserRole('${user.id}', this.value)" 
+                                ${user.username === 'admin' ? 'disabled' : ''}
+                                style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--gray-300);">
+                                <option value="operador" ${user.role === 'operador' ? 'selected' : ''}>Operador</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                        </div>
                     </div>
                 `).join('');
             } catch (error) {
@@ -553,6 +567,57 @@
             } catch (error) {
                 console.error('Error creating user:', error);
                 showToastMessage(error.message || 'Erro ao criar usuário', 'error');
+            }
+        }
+
+        // --- NEW FEATURES ---
+
+        function renderBackupsList() {
+            const list = document.getElementById('backupsList');
+            if (!list || !window.getBackups) return;
+
+            const backups = window.getBackups();
+            if (backups.length === 0) {
+                list.innerHTML = '<p class="empty-users">Nenhum backup encontrado.</p>';
+                return;
+            }
+
+            list.innerHTML = backups.map((bkp, index) => `
+                <div class="user-item">
+                    <div class="user-info">
+                        <div class="user-details">
+                            <h3>Datas: ${new Date(bkp.timestamp).toLocaleDateString()} ${new Date(bkp.timestamp).toLocaleTimeString()}</h3>
+                            <p style="font-size: 0.8rem; color: var(--gray-500);">${bkp.type === 'manual' ? 'Manual' : 'Automático'}</p>
+                        </div>
+                    </div>
+                    <button class="btn-create" style="width: auto; padding: 4px 12px; font-size: 0.8rem; background: var(--orange-500);" 
+                        onclick="handleRestore(${index})">
+                        Restaurar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function handleRestore(index) {
+            if (confirm('ATENÇÃO: Restaurar o backup substituirá os dados do servidor pelos dados deste backup. Deseja continuar?')) {
+                const success = await window.restoreBackup(index);
+                if (success) {
+                    showToastMessage('Backup restaurado com sucesso!');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToastMessage('Erro ao restaurar backup', 'error');
+                }
+            }
+        }
+
+        async function changeUserRole(userId, newRole) {
+            try {
+                const success = await window.updateUserRole(userId, newRole);
+                if (success) showToastMessage('Permissão de usuário atualizada!');
+                else throw new Error('Falha ao atualizar');
+            } catch (e) {
+                showToastMessage('Erro ao atualizar permissão', 'error');
+                loadUsers(); // Revert UI
             }
         }
 
