@@ -90,6 +90,7 @@ const App: React.FC = () => {
           analysis={analysis} 
           onRunAnalysis={handleSmartAnalysis}
           onRefresh={refreshData}
+          isGuest={isGuest}
         />
       )}
       {currentSection === 'notas' && (
@@ -114,7 +115,7 @@ const App: React.FC = () => {
           onRefresh={refreshData}
         />
       )}
-      {currentSection === 'comentarios' && (
+      {currentSection === 'comentarios' && !isGuest && (
         <ListManager<Comentario>
           title="Comentários"
           items={data.comentarios}

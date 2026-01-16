@@ -11,7 +11,10 @@ import {
   format, 
   startOfWeek, 
   endOfWeek,
-  subDays
+  subDays,
+  addMonths,
+  subMonths,
+  isSameMonth
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -20,17 +23,27 @@ interface DashboardProps {
   analysis: string;
   onRunAnalysis: () => void;
   onRefresh?: () => void;
+  isGuest?: boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnalysis, onRefresh }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnalysis, onRefresh, isGuest }) => {
   const today = new Date();
   const yesterday = subDays(today, 1);
+  const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState<'notas' | 'ordens' | 'comentarios'>('notas');
   const [quickComment, setQuickComment] = useState('');
   const [savingComment, setSavingComment] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   
+  // Feedback UI State
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const criticalItems = [
     ...(data?.notas.filter(n => 
       ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status) && 
@@ -49,8 +62,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
     { label: 'Alertas Críticos', value: criticalItems.length, icon: '🚨', color: 'red' },
   ];
 
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
+  const monthStart = startOfMonth(viewDate);
+  const monthEnd = endOfMonth(viewDate);
   const calendarInterval = eachDayOfInterval({
     start: startOfWeek(monthStart),
     end: endOfWeek(monthEnd)
@@ -98,8 +111,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
       });
       setQuickComment('');
       if (onRefresh) onRefresh();
+      showToast("Evento registrado com sucesso!");
     } catch (err) {
-      alert("Erro ao salvar comentário.");
+      showToast("Falha ao salvar observação.");
     } finally {
       setSavingComment(false);
     }
@@ -108,43 +122,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
   const selectedDayInfo = selectedDay ? getDayDetails(selectedDay) : null;
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
+    <div className="space-y-6 animate-fadeIn pb-12 relative">
+      {/* Mini Toast */}
+      {toast && (
+        <div className="fixed top-20 right-8 z-[200] bg-emerald-900 text-white px-6 py-3 rounded-full shadow-2xl animate-slideInRight text-[10px] font-black uppercase tracking-widest border border-emerald-700">
+          ✅ {toast}
+        </div>
+      )}
+
       {/* Header do Dashboard */}
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-        <h2 className="text-xl font-black text-gray-800 tracking-tight uppercase">Dashboard Operacional</h2>
-        <button onClick={() => { onRunAnalysis(); setShowAnalysisModal(true); }} className="flex items-center gap-2 px-6 py-2.5 bg-emerald-700 text-white font-black rounded-xl shadow-lg hover:bg-emerald-800 transition-all text-xs tracking-widest uppercase">
-          <span className="text-lg leading-none">✨</span> ANÁLISE INTELIGENTE
+        <h2 className="text-xl font-black text-gray-800 tracking-tight uppercase leading-none">Visão Operacional</h2>
+        <button onClick={() => { onRunAnalysis(); setShowAnalysisModal(true); }} className="flex items-center gap-2 px-6 py-3 bg-[#005c3e] text-white font-black rounded-xl shadow-lg hover:bg-emerald-900 transition-all text-[10px] tracking-widest uppercase">
+          <span className="text-sm">✨</span> Analisar com Gemini
         </button>
       </div>
 
-      {/* Alertas de Pendências (Fiel à imagem, abaixo do header) */}
+      {/* Alertas de Pendências */}
       {criticalItems.length > 0 && (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🔔</span>
-              <h3 className="text-sm font-black text-red-600 uppercase tracking-tight">Alertas de Pendências</h3>
+        <div className="bg-red-50 border border-red-100 rounded-[2rem] p-8 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔥</span>
+              <h3 className="text-sm font-black text-red-600 uppercase tracking-widest">Atenção Imediata</h3>
             </div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase">Itens pendentes há 3+ dias</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Prioridade Crítica</span>
           </div>
           
-          <div className="space-y-3 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-4 custom-scrollbar">
             {criticalItems.map((item: any) => {
               const days = differenceInDays(new Date(), new Date(item.data + 'T12:00:00'));
               return (
-                <div key={item.id} className="bg-white p-4 rounded-xl border border-red-50 flex justify-between items-center hover:shadow-md transition-shadow group">
+                <div key={item.id} className="bg-white p-5 rounded-2xl border border-red-100 flex justify-between items-center hover:shadow-lg transition-all group cursor-pointer border-l-8 border-l-red-500">
                   <div>
                     <p className="text-sm font-black text-gray-800 leading-none">
-                      {item.type} <span className="text-emerald-700">{item.numero}</span>
+                      {item.type} <span className="text-red-600">#{item.numero}</span>
                     </p>
-                    <p className="text-[10px] text-gray-400 font-bold mt-1.5 uppercase tracking-wide">
-                      {item.fornecedor || item.documento || 'Sem detalhes'} • <span className="text-red-400">{item.status}</span>
+                    <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-tight">
+                      {item.fornecedor || item.documento || 'Sem identificação'} • <span className="text-red-400">{item.status}</span>
                     </p>
                   </div>
-                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black shadow-sm transition-transform group-hover:scale-105 ${
-                    days >= 6 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                  <div className={`px-5 py-2 rounded-xl text-[10px] font-black shadow-inner transition-transform group-hover:scale-110 ${
+                    days >= 6 ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'
                   }`}>
-                    {days} dias
+                    {days} dias atrás
                   </div>
                 </div>
               );
@@ -156,37 +177,61 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${
+          <div key={stat.label} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-lg transition-all group">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform ${
               stat.color === 'blue' ? 'bg-blue-50' : 
               stat.color === 'emerald' ? 'bg-emerald-50' : 
               stat.color === 'purple' ? 'bg-purple-50' : 'bg-red-50'
             }`}>{stat.icon}</div>
             <div>
-              <p className="text-2xl font-black text-gray-900 leading-none">{stat.value}</p>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{stat.label}</p>
+              <p className="text-3xl font-black text-gray-900 leading-none tracking-tighter">{stat.value}</p>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1.5">{stat.label}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Calendário */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6 border-l-4 border-emerald-600 pl-4">Calendário de Atividade - {format(today, 'MMMM yyyy', { locale: ptBR })}</h3>
-        <div className="grid grid-cols-7 gap-2">
+      <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest border-l-8 border-emerald-600 pl-4">
+            Calendário Operacional <span className="text-emerald-700 ml-2">[{format(viewDate, 'MMMM yyyy', { locale: ptBR })}]</span>
+          </h3>
+          <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-2xl border border-gray-100 shadow-inner">
+            <button onClick={() => setViewDate(subMonths(viewDate, 1))} className="p-2 hover:bg-white hover:shadow-md rounded-xl text-gray-400 hover:text-emerald-600 transition-all">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button onClick={() => setViewDate(new Date())} className="px-6 py-2 text-[10px] font-black uppercase text-gray-500 hover:text-emerald-600 bg-white shadow-sm border border-gray-100 rounded-xl transition-all">Mês Atual</button>
+            <button onClick={() => setViewDate(addMonths(viewDate, 1))} className="p-2 hover:bg-white hover:shadow-md rounded-xl text-gray-400 hover:text-emerald-600 transition-all">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-3">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="text-center text-[9px] font-black text-gray-300 uppercase py-1">{d}</div>
+            <div key={d} className="text-center text-[10px] font-black text-gray-300 uppercase py-2 tracking-widest">{d}</div>
           ))}
           {calendarInterval.map((date, i) => {
             const { notas, ordens, comentarios } = getDayDetails(date);
-            const hasItems = notas.length > 0 || ordens.length > 0 || comentarios.length > 0;
+            const hasItems = notas.length > 0 || ordens.length > 0 || (!isGuest && comentarios.length > 0);
+            const isCurrentMonth = isSameMonth(date, viewDate);
+            
             return (
-              <div key={i} onClick={() => { setSelectedDay(date); setActiveTab('notas'); }} className={`min-h-[85px] p-2 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${getDayStatusStyle(date)} ${hasItems ? 'hover:scale-[1.03] active:scale-95 shadow-sm' : 'opacity-60'}`}>
-                <span className="text-sm font-black">{format(date, 'd')}</span>
-                <div className="flex flex-col gap-0.5 mt-1">
-                   {notas.length > 0 && <div className="flex justify-between bg-white/40 px-1 py-0.5 rounded text-[8px] font-black uppercase"><span>NF</span><span>({notas.length})</span></div>}
-                   {ordens.length > 0 && <div className="flex justify-between bg-white/40 px-1 py-0.5 rounded text-[8px] font-black uppercase"><span>OP</span><span>({ordens.length})</span></div>}
-                   {comentarios.length > 0 && <div className="flex justify-between bg-white/40 px-1 py-0.5 rounded text-[8px] font-black uppercase"><span>Obs</span><span>({comentarios.length})</span></div>}
+              <div 
+                key={i} 
+                onClick={() => { setSelectedDay(date); setActiveTab('notas'); }} 
+                className={`min-h-[100px] p-3 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group
+                  ${getDayStatusStyle(date)} 
+                  ${hasItems ? 'hover:scale-105 active:scale-95 shadow-lg border-opacity-100' : 'opacity-60 border-opacity-20'}
+                  ${!isCurrentMonth ? 'opacity-20 pointer-events-none' : ''}
+                `}
+              >
+                <span className="text-sm font-black group-hover:scale-125 transition-transform">{format(date, 'd')}</span>
+                <div className="flex flex-col gap-1 mt-2">
+                   {notas.length > 0 && <div className="flex justify-between bg-white/50 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase"><span>NF</span><span>{notas.length}</span></div>}
+                   {ordens.length > 0 && <div className="flex justify-between bg-white/50 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase"><span>OP</span><span>{ordens.length}</span></div>}
+                   {!isGuest && comentarios.length > 0 && <div className="flex justify-between bg-white/50 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase"><span>OBS</span><span>{comentarios.length}</span></div>}
                 </div>
               </div>
             );
@@ -194,103 +239,118 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
         </div>
       </div>
 
-      {/* Modal de Análise */}
+      {/* Análise IA Modal */}
       {showAnalysisModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-8 border-b bg-emerald-900 text-white flex justify-between items-center">
-              <h3 className="text-xl font-black uppercase tracking-tight">Análise Executiva IA</h3>
-              <button onClick={() => setShowAnalysisModal(false)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn">
+            <div className="p-10 border-b bg-[#005c3e] text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Análise Estratégica Gemini</h3>
+                <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mt-1">Inteligência Operacional Agrosystem</p>
+              </div>
+              <button onClick={() => setShowAnalysisModal(false)} className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             <div className="p-10">
-              <p className="text-gray-700 text-lg leading-relaxed italic font-medium bg-gray-50 p-6 rounded-3xl border border-gray-100">{analysis || "Processando dados operacionais..."}</p>
-              <button onClick={() => setShowAnalysisModal(false)} className="w-full mt-8 py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-xl hover:bg-emerald-700 transition-all uppercase tracking-widest">Entendido</button>
+              <div className="text-gray-700 text-lg leading-relaxed italic font-medium bg-gray-50 p-8 rounded-[2rem] border-2 border-emerald-100 shadow-inner">
+                {analysis || "Consultando bases operacionais e processando indicadores..."}
+              </div>
+              <button onClick={() => setShowAnalysisModal(false)} className="w-full mt-10 py-5 bg-[#005c3e] text-white font-black rounded-2xl shadow-xl hover:bg-emerald-900 transition-all uppercase tracking-widest text-xs">Continuar Gestão</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de Detalhes do Dia (Sistema de Abas) */}
+      {/* Detalhes do Dia Modal */}
       {selectedDay && selectedDayInfo && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scaleIn">
+            <div className="p-8 border-b flex justify-between items-center bg-gray-50/80">
               <div>
-                <h3 className="text-xl font-black text-gray-900 tracking-tight">{format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}</h3>
-                <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mt-1">{format(selectedDay, "eeee", { locale: ptBR })}</p>
+                <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">{format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}</h3>
+                <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mt-2 bg-emerald-100 px-3 py-1 rounded-full inline-block">{format(selectedDay, "eeee", { locale: ptBR })}</p>
               </div>
-              <button onClick={() => setSelectedDay(null)} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={() => setSelectedDay(null)} className="p-3 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-full transition-all group">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             
-            {/* Sistema de Abas */}
-            <div className="flex border-b bg-gray-50/30">
-              {(['notas', 'ordens', 'comentarios'] as const).map((tab) => (
+            <div className="flex border-b bg-gray-50/50 p-2 gap-2">
+              {(['notas', 'ordens', 'comentarios'] as const).filter(t => isGuest ? t !== 'comentarios' : true).map((tab) => (
                 <button 
                   key={tab} 
                   onClick={() => setActiveTab(tab)} 
-                  className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest border-b-4 transition-all ${
-                    activeTab === tab ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-gray-400 hover:bg-gray-50'
+                  className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all ${
+                    activeTab === tab ? 'bg-white text-emerald-700 shadow-md ring-1 ring-gray-100' : 'text-gray-400 hover:text-gray-600'
                   }`}
                 >
-                  {tab === 'notas' ? 'Notas' : tab === 'ordens' ? 'Ordens' : 'Observações'} ({tab === 'notas' ? selectedDayInfo.notas.length : tab === 'ordens' ? selectedDayInfo.ordens.length : selectedDayInfo.comentarios.length})
+                  {tab === 'notas' ? 'NFs' : tab === 'ordens' ? 'OPs' : 'Obs'} 
+                  <span className="ml-2 opacity-40">({tab === 'notas' ? selectedDayInfo.notas.length : tab === 'ordens' ? selectedDayInfo.ordens.length : selectedDayInfo.comentarios.length})</span>
                 </button>
               ))}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-white">
               {activeTab === 'notas' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {selectedDayInfo.notas.map(n => (
-                    <div key={n.id} className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex justify-between items-center hover:bg-blue-50 transition-colors">
-                      <div>
-                        <p className="text-sm font-black text-gray-900 leading-none">NF #{n.numero}</p>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase">{n.fornecedor}</p>
+                    <div key={n.id} className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 hover:bg-blue-50 transition-all border-l-8 border-l-blue-500">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-lg font-black text-gray-900 leading-none tracking-tight">NF #{n.numero}</p>
+                          <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-tight">{n.fornecedor}</p>
+                        </div>
+                        <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm ${n.status === 'Classificada' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'}`}>{n.status}</span>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${n.status === 'Classificada' ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white'}`}>{n.status}</span>
+                      {n.observacao && (
+                        <div className="mt-4 p-4 bg-white/80 rounded-2xl shadow-inner italic text-sm text-gray-600 font-medium">"{n.observacao}"</div>
+                      )}
                     </div>
                   ))}
-                  {selectedDayInfo.notas.length === 0 && <p className="text-center py-10 text-gray-300 font-black uppercase text-xs">Nenhuma nota registrada</p>}
+                  {selectedDayInfo.notas.length === 0 && <div className="text-center py-20 opacity-20 font-black uppercase text-sm">Vazio</div>}
                 </div>
               )}
 
               {activeTab === 'ordens' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {selectedDayInfo.ordens.map(o => (
-                    <div key={o.id} className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex justify-between items-center hover:bg-emerald-50 transition-colors">
-                      <div>
-                        <p className="text-sm font-black text-gray-900 leading-none">OP #{o.numero}</p>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase">{o.documento}</p>
+                    <div key={o.id} className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100 hover:bg-emerald-50 transition-all border-l-8 border-l-emerald-500">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-lg font-black text-gray-900 leading-none tracking-tight">OP #{o.numero}</p>
+                          <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-tight">{o.documento}</p>
+                        </div>
+                        <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-sm ${o.status === 'Concluída' ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'}`}>{o.status}</span>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${o.status === 'Concluída' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>{o.status}</span>
+                      {o.observacao && (
+                        <div className="mt-4 p-4 bg-white/80 rounded-2xl shadow-inner italic text-sm text-gray-600 font-medium">"{o.observacao}"</div>
+                      )}
                     </div>
                   ))}
-                  {selectedDayInfo.ordens.length === 0 && <p className="text-center py-10 text-gray-300 font-black uppercase text-xs">Nenhuma ordem registrada</p>}
+                  {selectedDayInfo.ordens.length === 0 && <div className="text-center py-20 opacity-20 font-black uppercase text-sm">Vazio</div>}
                 </div>
               )}
 
-              {activeTab === 'comentarios' && (
-                <div className="space-y-4">
-                  <section className="bg-purple-50 p-5 rounded-2xl border border-purple-100 mb-6 shadow-inner">
-                    <h4 className="text-[9px] font-black text-purple-700 uppercase tracking-widest mb-3">Registrar Evento</h4>
-                    <form onSubmit={handleSaveQuickComment} className="flex gap-2">
-                      <input type="text" placeholder="Algo a destacar hoje?" className="flex-1 px-4 py-2.5 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm font-medium" value={quickComment} onChange={e => setQuickComment(e.target.value)} />
-                      <button type="submit" disabled={savingComment || !quickComment.trim()} className="px-6 py-2.5 bg-purple-600 text-white font-black rounded-xl hover:bg-purple-700 transition-all text-[10px] uppercase">Salvar</button>
+              {activeTab === 'comentarios' && !isGuest && (
+                <div className="space-y-6">
+                  <section className="bg-gray-50 p-6 rounded-[2rem] border border-gray-200 shadow-inner">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Novo Apontamento</h4>
+                    <form onSubmit={handleSaveQuickComment} className="flex gap-3">
+                      <input type="text" placeholder="Descreva o evento de hoje..." className="flex-1 px-6 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-medium shadow-sm" value={quickComment} onChange={e => setQuickComment(e.target.value)} />
+                      <button type="submit" disabled={savingComment || !quickComment.trim()} className="px-8 py-4 bg-[#005c3e] text-white font-black rounded-2xl hover:bg-emerald-900 transition-all text-[10px] uppercase shadow-lg">Salvar</button>
                     </form>
                   </section>
                   {selectedDayInfo.comentarios.map(c => (
-                    <div key={c.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 shadow-sm"><p className="text-sm font-medium text-gray-700 leading-relaxed italic">"{c.texto}"</p></div>
+                    <div key={c.id} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-medium text-gray-700 leading-relaxed italic border-l-4 border-emerald-300 shadow-sm">"{c.texto}"</div>
                   ))}
-                  {selectedDayInfo.comentarios.length === 0 && <p className="text-center py-6 text-gray-300 font-black uppercase text-xs tracking-widest">Sem observações adicionais</p>}
+                  {selectedDayInfo.comentarios.length === 0 && <div className="text-center py-10 text-gray-300 font-black uppercase text-[10px] tracking-widest">Sem notas adicionais</div>}
                 </div>
               )}
             </div>
             
-            <div className="p-6 bg-gray-50 border-t flex gap-3">
-              <button onClick={() => setSelectedDay(null)} className="flex-1 py-4 bg-gray-900 text-white font-black text-xs rounded-xl hover:bg-black transition-all shadow-lg uppercase tracking-widest">Fechar Detalhes</button>
+            <div className="p-8 bg-gray-50 border-t">
+              <button onClick={() => setSelectedDay(null)} className="w-full py-5 bg-gray-900 text-white font-black text-xs rounded-2xl hover:bg-black transition-all shadow-xl uppercase tracking-widest">Sair dos Detalhes</button>
             </div>
           </div>
         </div>

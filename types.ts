@@ -43,3 +43,10 @@ export interface AppState {
   ordens: OrdemProducao[];
   comentarios: Comentario[];
 }
+
+export interface Backup {
+  id: string;
+  created_at: string;
+  data_snapshot: AppState;
+  tipo: 'manual' | 'automatico';
+}
