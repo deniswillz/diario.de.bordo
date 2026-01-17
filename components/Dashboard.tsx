@@ -250,6 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
                         <div>
                           <p className="text-3xl font-black text-gray-900 tracking-tighter leading-none">#{n.numero}</p>
                           <p className="text-[11px] font-black text-blue-600 mt-4 uppercase tracking-[0.2em]">{n.fornecedor || 'Geral'}</p>
+                          <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-widest">👤 {n.conferente || 'Responsável N/A'}</p>
                         </div>
                         <span className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shadow-lg bg-blue-600 text-white border-2 border-blue-800">{n.status}</span>
                       </div>
@@ -269,6 +270,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
                         <div>
                           <p className="text-3xl font-black text-gray-900 tracking-tighter leading-none">#{o.numero}</p>
                           <p className="text-[11px] font-black text-emerald-600 mt-4 uppercase tracking-[0.2em]">{o.documento || 'Geral'}</p>
+                          <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-widest">👤 {o.conferente || 'Responsável N/A'}</p>
                         </div>
                         <span className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shadow-lg bg-emerald-600 text-white border-2 border-emerald-800">{o.status}</span>
                       </div>

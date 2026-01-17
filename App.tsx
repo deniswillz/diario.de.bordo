@@ -32,6 +32,30 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Monitor de Backup Automático às 17:45
+  useEffect(() => {
+    const backupInterval = setInterval(() => {
+      const now = new Date();
+      // Verifica se é 17:45
+      if (now.getHours() === 17 && now.getMinutes() === 45) {
+        const lastAutoBackup = localStorage.getItem('last_auto_backup_date');
+        const todayStr = now.toDateString();
+
+        if (lastAutoBackup !== todayStr && data.notas.length > 0) {
+          console.log("Iniciando backup automático de rotina (17:45)...");
+          db.system.createBackup(data, 'automatico')
+            .then(() => {
+              localStorage.setItem('last_auto_backup_date', todayStr);
+              console.log("Backup automático concluído com sucesso.");
+            })
+            .catch(err => console.error("Falha no backup automático:", err));
+        }
+      }
+    }, 60000); // Checa a cada minuto
+
+    return () => clearInterval(backupInterval);
+  }, [data]);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('diario_user');
     const guestMode = localStorage.getItem('diario_guest_mode') === 'true';
@@ -127,7 +151,7 @@ const App: React.FC = () => {
         />
       )}
       {currentSection === 'admin' && role === 'admin' && (
-        <AdminPanel />
+        <AdminPanel currentData={data} onRefresh={refreshData} />
       )}
     </Layout>
   );
