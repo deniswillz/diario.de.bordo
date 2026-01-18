@@ -82,8 +82,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
   };
 
   const handleUpdateMyPassword = async () => {
-    if (myPassword.current !== myPassword.confirm || myPassword.current.length < 4) {
-      showToast("Verifique as senhas digitadas", "error");
+    if (!myPassword.current || myPassword.current !== myPassword.confirm || myPassword.current.length < 4) {
+      showToast("Verifique as senhas digitadas (mínimo 4 chars)", "error");
       return;
     }
     setActionLoading(true);
@@ -118,7 +118,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
         </div>
       )}
 
-      {/* MINHA CONTA NANO - ACESSO UNIVERSAL */}
+      {/* MINHA CONTA NANO - ACESSO UNIVERSAL PARA TODOS */}
       <section className="bg-white p-10 rounded-[2.5rem] shadow-xl border-2 border-gray-100">
         <div className="flex items-center gap-4 mb-10">
           <div className="h-8 w-2.5 bg-[#005c3e] rounded-full"></div>
@@ -137,7 +137,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
             <input type="password" value={myPassword.confirm} onChange={e => setMyPassword({...myPassword, confirm: e.target.value})} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" placeholder="••••••••" />
           </div>
           <div className="md:col-span-4">
-            <button onClick={handleUpdateMyPassword} className="w-full py-5 bg-[#005c3e] text-white font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-lg hover:bg-emerald-900 transition-all border-b-6 border-emerald-950">Atualizar Minha Senha</button>
+            <button onClick={handleUpdateMyPassword} disabled={actionLoading} className="w-full py-5 bg-[#005c3e] text-white font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-lg hover:bg-emerald-900 transition-all border-b-6 border-emerald-950 active:translate-y-1">
+              {actionLoading ? 'Processando...' : 'Atualizar Minha Senha'}
+            </button>
           </div>
         </div>
       </section>
@@ -156,7 +158,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-              {/* Formulário */}
               <div className="xl:col-span-5 bg-gray-50/50 p-8 rounded-[2rem] border-2 border-gray-100 shadow-inner">
                 <h3 className="text-[10px] font-black text-gray-400 uppercase mb-8 tracking-[0.3em] text-center">{editingUserId ? 'Atualizar Acesso' : 'Cadastrar Novo Acesso'}</h3>
                 <form onSubmit={handleSaveUser} className="space-y-5">
@@ -179,7 +180,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
                 </form>
               </div>
 
-              {/* Lista */}
               <div className="xl:col-span-7 space-y-4">
                 {users.map(u => (
                   <div key={u.id} className="p-5 bg-white border-2 border-gray-100 rounded-2xl flex items-center justify-between group border-l-[10px] border-l-emerald-600 shadow-sm">
@@ -241,9 +241,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
           </section>
         </>
       ) : (
-        <div className="p-10 bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200 text-center">
+        <div className="p-10 bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200 text-center flex flex-col items-center">
+          <svg className="w-12 h-12 text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
           <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">
-            Recursos restritos ao administrador do sistema Nano
+            Gestão de Colaboradores e Infraestrutura restritos ao administrador Nano
           </p>
         </div>
       )}

@@ -39,15 +39,15 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#005c3e] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[#005c3e] flex flex-col items-center justify-between p-8 relative overflow-hidden">
       {/* Marca d'água de fundo */}
       <div className="absolute top-10 right-10 opacity-5 select-none pointer-events-none">
-        <span className="text-[30rem] font-black italic leading-none">N</span>
+        <span className="text-[30rem] font-black italic leading-none text-white">N</span>
       </div>
 
-      <div className="flex flex-col items-center justify-center w-full max-w-md z-10 animate-fadeIn">
-        {/* Seção de Identidade Visual (Logo e Slogan) */}
-        <div className="text-center mb-8">
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md z-10 animate-fadeIn">
+        {/* Seção de Identidade Visual */}
+        <div className="text-center mb-10">
           <div className="inline-block bg-white p-8 rounded-[2.5rem] shadow-2xl transform -rotate-6 mb-8 border-4 border-emerald-900/10">
             <span className="text-[#005c3e] text-6xl font-black italic select-none">N</span>
           </div>
@@ -60,7 +60,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
         </div>
 
         {/* Cartão de Login */}
-        <div className="w-full bg-white rounded-[2.5rem] shadow-2xl p-10 animate-scaleIn border-4 border-emerald-950/10 mb-10">
+        <div className="w-full bg-white rounded-[2.5rem] shadow-2xl p-10 animate-scaleIn border-4 border-emerald-950/10">
           <form onSubmit={handleLogin} className="space-y-8">
             {error && (
               <div className="p-4 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase text-center border-2 border-red-100 animate-shake">
@@ -119,13 +119,13 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
             </div>
           </form>
         </div>
+      </div>
 
-        {/* Rodapé de Copyright - Agora mais visível e fixo na hierarquia flex */}
-        <div className="text-center pb-4">
-          <p className="text-emerald-200/50 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
-            Nano Pro &copy; 2026 - Gestão Industrial de Alta Performance
-          </p>
-        </div>
+      {/* Rodapé de Copyright Fixo e Visível */}
+      <div className="w-full text-center pb-2 z-20">
+        <p className="text-emerald-50 text-[10px] font-black uppercase tracking-[0.4em] leading-loose drop-shadow-md">
+          Nano Pro &copy; 2026 - Gestão Industrial de Alta Performance
+        </p>
       </div>
     </div>
   );

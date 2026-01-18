@@ -45,10 +45,16 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!editing) return;
-    if (type !== 'comentario' && !editing.numero) {
-      setErrorMessage("Número é obrigatório.");
+    
+    if (type === 'nota' && (!editing.numero || !editing.fornecedor)) {
+      setErrorMessage("Número da Nota e Fornecedor são obrigatórios.");
       return;
     }
+    if (type === 'ordem' && (!editing.numero || !editing.documento)) {
+      setErrorMessage("Número da Ordem e Documento são obrigatórios.");
+      return;
+    }
+
     setLoading(true);
     try {
       await onSave(editing);
@@ -94,6 +100,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
         (item.numero?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.texto?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.fornecedor?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.documento?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.conferente?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.data.includes(searchTerm));
 
@@ -115,40 +122,78 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
 
       {isFormOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-gray-400 max-h-[90vh] flex flex-col animate-scaleIn">
+          <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-gray-400 max-h-[90vh] flex flex-col animate-scaleIn">
             <form onSubmit={handleSave} className="flex flex-col h-full">
               <div className="p-10 bg-gray-50 border-b-4 border-gray-200 flex justify-between items-center">
                 <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic border-l-[10px] border-emerald-600 pl-6">
-                  {editing?.id ? 'Editar' : 'Novo'} {title}
+                  {editing?.id ? 'Editar' : 'Nova'} {type === 'ordem' ? 'Ordem de Produção' : (type === 'nota' ? 'Nota Fiscal' : title)}
                 </h3>
-                <button type="button" onClick={() => setIsFormOpen(false)} className="p-3 hover:bg-gray-200 rounded-full transition-all text-gray-400 border-2 border-transparent hover:border-gray-300">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="p-3 hover:bg-gray-200 rounded-full transition-all text-gray-400">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
 
               <div className="p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8">
                 {errorMessage && <div className="p-5 bg-red-50 text-red-600 rounded-2xl border-2 border-red-200 font-black text-[10px] uppercase tracking-widest">{errorMessage}</div>}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Data Operacional</label>
-                    <input type="date" value={editing?.data || ''} onChange={e => setEditing({ ...editing, data: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all" required />
-                  </div>
-                  {type !== 'comentario' && (
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Número Registro</label>
-                      <input type="text" value={editing?.numero || ''} onChange={e => setEditing({ ...editing, numero: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold shadow-inner focus:border-[#005c3e] transition-all" required />
+                
+                {/* FORMULÁRIO: NOTA FISCAL */}
+                {type === 'nota' && (
+                  <div className="space-y-8">
+                    {/* Linha 1: Data e Nota (Compacto) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Data</label>
+                        <input type="date" value={editing?.data || ''} onChange={e => setEditing({ ...editing, data: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all" required />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Número da Nota</label>
+                        <input type="text" placeholder="Ex: NF-12345" value={editing?.numero || ''} onChange={e => setEditing({ ...editing, numero: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all italic shadow-inner" required />
+                      </div>
                     </div>
-                  )}
-                </div>
-                {type !== 'comentario' && (
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Identificação / Responsável</label>
-                    <input type="text" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all" required />
+                    {/* Linha 2: Fornecedor (Full Width) */}
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Fornecedor</label>
+                      <input type="text" placeholder="Nome completo do fornecedor" value={editing?.fornecedor || ''} onChange={e => setEditing({ ...editing, fornecedor: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                    </div>
+                    {/* Linha 3: Conferente (Full Width) */}
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Conferente</label>
+                      <input type="text" placeholder="Nome do conferente responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                    </div>
                   </div>
                 )}
+
+                {/* FORMULÁRIO: ORDEM DE PRODUÇÃO */}
+                {type === 'ordem' && (
+                  <div className="space-y-8">
+                    {/* Linha 1: Data e Documento (Compacto) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Data</label>
+                        <input type="date" value={editing?.data || ''} onChange={e => setEditing({ ...editing, data: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all" required />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Documento</label>
+                        <input type="text" placeholder="Referência do Documento" value={editing?.documento || ''} onChange={e => setEditing({ ...editing, documento: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all italic shadow-inner" required />
+                      </div>
+                    </div>
+                    {/* Linha 2: Ordem (Full Width) */}
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Ordem</label>
+                      <input type="text" placeholder="Número da OP (Ordem de Produção)" value={editing?.numero || ''} onChange={e => setEditing({ ...editing, numero: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                    </div>
+                    {/* Linha 3: Responsável (Full Width) */}
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Responsável</label>
+                      <input type="text" placeholder="Nome do colaborador responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                    </div>
+                  </div>
+                )}
+
+                {/* CAMPO COMENTÁRIO COMUM */}
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Detalhamento / Observação</label>
-                  <textarea value={type === 'comentario' ? (editing?.texto || '') : (editing?.observacao || '')} onChange={e => setEditing({ ...editing, [type === 'comentario' ? 'texto' : 'observacao']: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none min-h-[120px] font-medium resize-none focus:border-[#005c3e] transition-all" required />
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Comentário</label>
+                  <textarea value={type === 'comentario' ? (editing?.texto || '') : (editing?.observacao || '')} onChange={e => setEditing({ ...editing, [type === 'comentario' ? 'texto' : 'observacao']: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none min-h-[120px] font-medium resize-none focus:border-[#005c3e] transition-all shadow-inner" required />
                 </div>
               </div>
 
@@ -185,7 +230,6 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
           </div>
           
           <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto">
-            {/* Seletor de Período */}
             <div className="flex items-center gap-2 bg-white border-4 border-gray-200 p-2 rounded-2xl shadow-inner">
                {['all', '1', '7', '30'].map(val => (
                  <button 
@@ -198,7 +242,6 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                ))}
             </div>
 
-            {/* Busca */}
             <div className="relative w-full xl:w-80">
               <input type="text" placeholder="Filtrar..." className="w-full bg-white border-4 border-gray-200 outline-none p-4 pl-12 text-sm font-black rounded-2xl focus:border-emerald-600 transition-all shadow-inner" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
               <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -222,8 +265,8 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                   <td className="px-10 py-10 font-black text-gray-800 text-sm italic">{format(parseISO(item.data), 'dd/MM/yyyy')}</td>
                   {type !== 'comentario' && (
                     <td className="px-10 py-10">
-                      <p className="text-2xl font-black text-gray-900 tracking-tighter leading-none italic">#{item.numero}</p>
-                      <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mt-2">{item.conferente}</p>
+                      <p className="text-2xl font-black text-gray-900 tracking-tighter leading-none italic">#{item.numero || item.documento}</p>
+                      <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mt-2">{item.conferente || item.fornecedor}</p>
                     </td>
                   )}
                   <td className="px-10 py-10">

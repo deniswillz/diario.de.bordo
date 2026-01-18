@@ -94,7 +94,7 @@ const App: React.FC = () => {
       )}
       {currentSection === 'notas' && (
         <ListManager<NotaFiscal>
-          title="Notas Fiscais"
+          title="Nota Fiscal"
           items={data.notas}
           role={role}
           type="nota"
