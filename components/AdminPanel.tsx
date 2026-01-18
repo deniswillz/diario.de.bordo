@@ -32,26 +32,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
     } catch { return {}; }
   })();
 
+  const isAdmin = currentUser.role === 'admin';
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
   const fetchUsers = useCallback(async () => {
+    if (!isAdmin) return;
     try {
       const data = await db.users.fetchAll();
       setUsers(data || []);
     } catch (e: any) {
       showToast("Falha na carga Nano", 'error');
     }
-  }, []);
+  }, [isAdmin]);
 
   const fetchBackups = useCallback(async () => {
+    if (!isAdmin) return;
     try {
       const data = await db.system.fetchBackups();
       setBackups(data || []);
     } catch (e: any) {}
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchUsers();
@@ -107,7 +111,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
       const updates: any = {
         name: editingUser.name.trim()
       };
-      // Só atualiza senha se preenchido
       if (editingUser.password && editingUser.password.trim().length > 0) {
         updates.password = editingUser.password;
       }
@@ -202,7 +205,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
         </div>
       )}
 
-      {editingUser && (
+      {editingUser && isAdmin && (
         <div className="fixed inset-0 z-[450] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fadeIn">
           <div className="bg-white w-full max-w-xl rounded-[3.5rem] shadow-2xl overflow-hidden border-4 border-emerald-600 animate-scaleIn">
             <div className="p-10 bg-[#005c3e] text-white">
@@ -241,7 +244,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
         </div>
       )}
 
-      {/* Seção 1: Minha Conta */}
+      {/* Seção 1: Minha Conta (Visível para todos logados) */}
       <section className="bg-white p-14 rounded-[4rem] shadow-2xl border-2 border-gray-300 relative overflow-hidden">
         <div className="flex items-center gap-10 mb-12">
           <div className="h-14 w-3 bg-[#005c3e] rounded-full"></div>
@@ -284,132 +287,131 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
         </form>
       </section>
 
-      {/* Seção 2: Gestão de Acessos */}
-      <section className="bg-white p-14 rounded-[4rem] shadow-2xl border-2 border-gray-300">
-        <div className="flex justify-between items-center mb-12">
-          <div className="flex items-center gap-10">
-            <div className="h-14 w-3 bg-[#005c3e] rounded-full"></div>
-            <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Colaboradores Nano</h2>
-          </div>
-          <span className="bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-black text-xs uppercase border-2 border-emerald-200">{users.length} usuários</span>
-        </div>
+      {/* Seções Restritas ao ADMIN */}
+      {isAdmin && (
+        <>
+          <section className="bg-white p-14 rounded-[4rem] shadow-2xl border-2 border-gray-300">
+            <div className="flex justify-between items-center mb-12">
+              <div className="flex items-center gap-10">
+                <div className="h-14 w-3 bg-[#005c3e] rounded-full"></div>
+                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Colaboradores Nano</h2>
+              </div>
+              <span className="bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-black text-xs uppercase border-2 border-emerald-200">{users.length} usuários</span>
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Formulário Novo Usuário */}
-          <div className="p-10 bg-gray-50 border-2 border-gray-300 rounded-[3.5rem] shadow-inner">
-            <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 text-center">Cadastrar Novo Acesso</h4>
-            <form onSubmit={handleCreateUser} className="space-y-6">
-              <input 
-                type="text" 
-                placeholder="Nome do Usuário" 
-                value={newUser.name}
-                onChange={e => setNewUser({...newUser, name: e.target.value})}
-                className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-bold text-lg" 
-                required
-              />
-              <input 
-                type="text" 
-                placeholder="Identificador (Login)" 
-                value={newUser.username}
-                onChange={e => setNewUser({...newUser, username: e.target.value})}
-                className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-bold text-lg" 
-                required
-              />
-              <input 
-                type="password" 
-                placeholder="Senha Inicial" 
-                value={newUser.password}
-                onChange={e => setNewUser({...newUser, password: e.target.value})}
-                className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-bold text-lg" 
-                required
-              />
-              <select 
-                value={newUser.role}
-                onChange={e => setNewUser({...newUser, role: e.target.value})}
-                className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-black text-xs uppercase tracking-widest appearance-none cursor-pointer"
-              >
-                <option value="operador">Nível Operador</option>
-                <option value="editor">Nível Editor</option>
-                <option value="admin">Nível Administrador</option>
-              </select>
-              <button type="submit" disabled={actionLoading} className="w-full py-6 bg-emerald-700 text-white font-black rounded-2xl shadow-xl uppercase text-[10px] tracking-widest border-b-4 border-emerald-900 active:scale-95 disabled:opacity-50">
-                {actionLoading ? 'Criando...' : 'Liberar Acesso Nano'}
-              </button>
-            </form>
-          </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="p-10 bg-gray-50 border-2 border-gray-300 rounded-[3.5rem] shadow-inner">
+                <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 text-center">Cadastrar Novo Acesso</h4>
+                <form onSubmit={handleCreateUser} className="space-y-6">
+                  <input 
+                    type="text" 
+                    placeholder="Nome do Usuário" 
+                    value={newUser.name}
+                    onChange={e => setNewUser({...newUser, name: e.target.value})}
+                    className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-bold text-lg" 
+                    required
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="Identificador (Login)" 
+                    value={newUser.username}
+                    onChange={e => setNewUser({...newUser, username: e.target.value})}
+                    className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-bold text-lg" 
+                    required
+                  />
+                  <input 
+                    type="password" 
+                    placeholder="Senha Inicial" 
+                    value={newUser.password}
+                    onChange={e => setNewUser({...newUser, password: e.target.value})}
+                    className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-bold text-lg" 
+                    required
+                  />
+                  <select 
+                    value={newUser.role}
+                    onChange={e => setNewUser({...newUser, role: e.target.value})}
+                    className="w-full px-8 py-5 bg-white border-2 border-gray-400 rounded-2xl outline-none font-black text-xs uppercase tracking-widest appearance-none cursor-pointer"
+                  >
+                    <option value="operador">Nível Operador</option>
+                    <option value="editor">Nível Editor</option>
+                    <option value="admin">Nível Administrador</option>
+                  </select>
+                  <button type="submit" disabled={actionLoading} className="w-full py-6 bg-emerald-700 text-white font-black rounded-2xl shadow-xl uppercase text-[10px] tracking-widest border-b-4 border-emerald-900 active:scale-95 disabled:opacity-50">
+                    {actionLoading ? 'Criando...' : 'Liberar Acesso Nano'}
+                  </button>
+                </form>
+              </div>
 
-          {/* Lista de Usuários */}
-          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
-            {users.map(u => (
-              <div key={u.id} className="flex items-center justify-between p-6 bg-white border-2 border-gray-300 rounded-3xl hover:border-emerald-500 transition-all border-l-8 border-l-emerald-600">
-                <div className="flex items-center gap-6">
-                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center font-black text-emerald-700 border-2 border-gray-200 uppercase">{u.username.charAt(0)}</div>
-                  <div>
-                    <p className="text-xl font-black text-gray-900 tracking-tight">{u.name || u.username}</p>
-                    <div className="flex items-center gap-4">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Login: {u.username}</p>
-                      <select 
-                        value={u.role} 
-                        onChange={(e) => handleUpdateRole(u.id, e.target.value as UserRole)}
-                        className="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-transparent outline-none cursor-pointer hover:underline"
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="editor">Editor</option>
-                        <option value="operador">Operador</option>
-                      </select>
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
+                {users.map(u => (
+                  <div key={u.id} className="flex items-center justify-between p-6 bg-white border-2 border-gray-300 rounded-3xl hover:border-emerald-500 transition-all border-l-8 border-l-emerald-600">
+                    <div className="flex items-center gap-6">
+                      <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center font-black text-emerald-700 border-2 border-gray-200 uppercase">{u.username.charAt(0)}</div>
+                      <div>
+                        <p className="text-xl font-black text-gray-900 tracking-tight">{u.name || u.username}</p>
+                        <div className="flex items-center gap-4">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Login: {u.username}</p>
+                          <select 
+                            value={u.role} 
+                            onChange={(e) => handleUpdateRole(u.id, e.target.value as UserRole)}
+                            className="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-transparent outline-none cursor-pointer hover:underline"
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="editor">Editor</option>
+                            <option value="operador">Operador</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingUser(u)} className="p-3 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Editar Colaborador">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                      </button>
+                      <button onClick={() => handleDeleteUser(u.id)} className="p-3 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all" title="Excluir Acesso">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setEditingUser(u)} className="p-3 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Editar Colaborador">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  </button>
-                  <button onClick={() => handleDeleteUser(u.id)} className="p-3 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all" title="Excluir Acesso">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
-      {/* Seção 3: Infraestrutura */}
-      <section className="bg-white p-14 rounded-[4rem] shadow-2xl border-2 border-gray-300 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 text-emerald-100 text-6xl font-black opacity-10 italic">NANO INFRA</div>
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 mb-16">
-           <div className="flex items-center gap-10">
-              <div className="h-14 w-3 bg-[#005c3e] rounded-full"></div>
-              <div>
-                 <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Infraestrutura Nano</h2>
-                 <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mt-2">Dados Críticos e Recuperação</p>
-              </div>
-           </div>
-           <button onClick={() => setShowSqlFix(true)} className="px-10 py-5 bg-gray-50 border-2 border-gray-300 text-[10px] font-black uppercase text-gray-500 rounded-2xl hover:border-red-500 hover:text-red-600 transition-all">Segurança SQL Nano</button>
-        </div>
+          <section className="bg-white p-14 rounded-[4rem] shadow-2xl border-2 border-gray-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 text-emerald-100 text-6xl font-black opacity-10 italic">NANO INFRA</div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 mb-16">
+               <div className="flex items-center gap-10">
+                  <div className="h-14 w-3 bg-[#005c3e] rounded-full"></div>
+                  <div>
+                     <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Infraestrutura Nano</h2>
+                     <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mt-2">Dados Críticos e Recuperação</p>
+                  </div>
+               </div>
+               <button onClick={() => setShowSqlFix(true)} className="px-10 py-5 bg-gray-50 border-2 border-gray-300 text-[10px] font-black uppercase text-gray-500 rounded-2xl hover:border-red-500 hover:text-red-600 transition-all">Segurança SQL Nano</button>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-           <div className="p-10 bg-gray-50 border-2 border-gray-400 rounded-[3rem] text-center hover:border-emerald-600 transition-all group">
-              <div className="w-16 h-16 bg-white border-2 border-gray-300 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform">☁️</div>
-              <h4 className="text-xl font-black text-gray-900 uppercase tracking-tight">Nano Cloud Sync</h4>
-              <p className="text-xs font-bold text-gray-400 mt-3 mb-10 leading-relaxed">Gera um ponto de restauração manual agora na rede Nano.</p>
-              <button onClick={handleManualBackup} disabled={actionLoading} className="w-full py-6 bg-[#005c3e] text-white font-black rounded-3xl text-[10px] uppercase tracking-widest shadow-2xl border-b-8 border-emerald-950 active:translate-y-1">Novo Backup Cloud</button>
-           </div>
-           
-           <div className="p-10 bg-gray-50 border-2 border-gray-400 rounded-[3rem] text-center hover:border-blue-600 transition-all group">
-              <div className="w-16 h-16 bg-white border-2 border-gray-300 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform">🔄</div>
-              <h4 className="text-xl font-black text-gray-900 uppercase tracking-tight">Time Travel</h4>
-              <p className="text-xs font-bold text-gray-400 mt-3 mb-10 leading-relaxed">Retorne o banco Nano a um estado anterior via snapshot.</p>
-              <button onClick={() => setShowCloudBackups(true)} className="w-full py-6 bg-blue-600 text-white font-black rounded-3xl text-[10px] uppercase tracking-widest shadow-2xl border-b-8 border-blue-900 active:translate-y-1">Ver Histórico Nano</button>
-           </div>
-        </div>
-      </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+               <div className="p-10 bg-gray-50 border-2 border-gray-400 rounded-[3rem] text-center hover:border-emerald-600 transition-all group">
+                  <div className="w-16 h-16 bg-white border-2 border-gray-300 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform">☁️</div>
+                  <h4 className="text-xl font-black text-gray-900 uppercase tracking-tight">Nano Cloud Sync</h4>
+                  <p className="text-xs font-bold text-gray-400 mt-3 mb-10 leading-relaxed">Gera um ponto de restauração manual agora na rede Nano.</p>
+                  <button onClick={handleManualBackup} disabled={actionLoading} className="w-full py-6 bg-[#005c3e] text-white font-black rounded-3xl text-[10px] uppercase tracking-widest shadow-2xl border-b-8 border-emerald-950 active:translate-y-1">Novo Backup Cloud</button>
+               </div>
+               
+               <div className="p-10 bg-gray-50 border-2 border-gray-400 rounded-[3rem] text-center hover:border-blue-600 transition-all group">
+                  <div className="w-16 h-16 bg-white border-2 border-gray-300 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform">🔄</div>
+                  <h4 className="text-xl font-black text-gray-900 uppercase tracking-tight">Time Travel</h4>
+                  <p className="text-xs font-bold text-gray-400 mt-3 mb-10 leading-relaxed">Retorne o banco Nano a um estado anterior via snapshot.</p>
+                  <button onClick={() => setShowCloudBackups(true)} className="w-full py-6 bg-blue-600 text-white font-black rounded-3xl text-[10px] uppercase tracking-widest shadow-2xl border-b-8 border-blue-900 active:translate-y-1">Ver Histórico Nano</button>
+               </div>
+            </div>
+          </section>
 
-      {showSqlFix && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl animate-fadeIn">
-          <div className="p-14 bg-red-600 text-white rounded-[4rem] shadow-2xl max-w-3xl w-full border-4 border-red-400">
-            <h3 className="text-4xl font-black uppercase tracking-tighter italic mb-12">Script Estrutural Nano</h3>
-            <pre className="bg-black/40 p-10 rounded-[2.5rem] text-[10px] font-mono overflow-x-auto border-2 border-white/20 text-red-50 leading-loose shadow-inner mb-10">
+          {showSqlFix && (
+            <div className="fixed inset-0 z-[600] flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl animate-fadeIn">
+              <div className="p-14 bg-red-600 text-white rounded-[4rem] shadow-2xl max-w-3xl w-full border-4 border-red-400">
+                <h3 className="text-4xl font-black uppercase tracking-tighter italic mb-12">Script Estrutural Nano</h3>
+                <pre className="bg-black/40 p-10 rounded-[2.5rem] text-[10px] font-mono overflow-x-auto border-2 border-white/20 text-red-50 leading-loose shadow-inner mb-10">
 {`ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notas_fiscais DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ordens_producao DISABLE ROW LEVEL SECURITY;
@@ -422,10 +424,12 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 ALTER TABLE public.system_settings DISABLE ROW LEVEL SECURITY;`}
-            </pre>
-            <button onClick={() => setShowSqlFix(false)} className="w-full py-8 bg-red-900 hover:bg-black text-white font-black rounded-3xl text-xs uppercase tracking-[0.3em] shadow-2xl border-2 border-red-700">Fechar Terminal</button>
-          </div>
-        </div>
+                </pre>
+                <button onClick={() => setShowSqlFix(false)} className="w-full py-8 bg-red-900 hover:bg-black text-white font-black rounded-3xl text-xs uppercase tracking-[0.3em] shadow-2xl border-2 border-red-700">Fechar Terminal</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

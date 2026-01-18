@@ -76,7 +76,6 @@ const App: React.FC = () => {
 
   const handleLogin = (u: User) => {
     setUser(u);
-    // Usamos sessionStorage apenas como referência rápida para o AdminPanel identificar o usuário logado
     sessionStorage.setItem('active_user', JSON.stringify(u));
   };
 
@@ -124,7 +123,7 @@ const App: React.FC = () => {
       )}
       {currentSection === 'ordens' && (
         <ListManager<OrdemProducao>
-          title="Ordens de Produção"
+          title="Ordem"
           items={data.ordens}
           role={role}
           type="ordem"
@@ -144,8 +143,8 @@ const App: React.FC = () => {
           onRefresh={refreshData}
         />
       )}
-      {/* BLOQUEIO: AdminPanel agora só renderiza se o usuário for ADMIN */}
-      {currentSection === 'admin' && role === 'admin' && (
+      {/* Liberado para todos logados, o componente interno AdminPanel fará a filtragem por cargo */}
+      {currentSection === 'admin' && !isGuest && (
         <AdminPanel currentData={data} onRefresh={refreshData} />
       )}
     </Layout>

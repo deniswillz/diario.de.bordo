@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { AppState } from '../types';
+import { AppState, NotaFiscal, OrdemProducao, Comentario } from '../types';
 import { db } from '../services/supabase';
 import { differenceInDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, format, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,6 +17,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [activeTab, setActiveTab] = useState<'notas' | 'ordens' | 'comentarios'>('notas');
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -40,11 +41,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
 
     return [
       { label: 'Notas no Mês', value: notasMes.length, icon: '📄', color: 'blue' },
-      { label: 'Ordens no Mês', value: ordensMes.length, icon: '⚙️', color: 'emerald' },
+      { label: 'Ordem no Mês', value: ordensMes.length, icon: '⚙️', color: 'emerald' },
       { label: 'Apontamentos', value: comentariosMes.length, icon: '💬', color: 'purple' },
       { label: 'Críticos Mês', value: criticosMes.length, icon: '🚨', color: 'red' },
     ];
   }, [data, viewDate, today]);
+
+  // Itens Críticos Gerais para a Seção de Alertas
+  const allCriticalItems = useMemo(() => {
+    const notasCrit = data.notas.filter(n => ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status) && differenceInDays(today, parseISO(n.data)) >= 3);
+    const ordensCrit = data.ordens.filter(o => o.status === 'Em Separação' && differenceInDays(today, parseISO(o.data)) >= 3);
+    return [
+      ...notasCrit.map(i => ({ ...i, tipo: 'Nota Fiscal' })),
+      ...ordensCrit.map(i => ({ ...i, tipo: 'Ordem' }))
+    ];
+  }, [data, today]);
 
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
@@ -72,6 +83,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
     return base + 'bg-gray-50/50 border-gray-300 text-gray-400';
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Classificada':
+      case 'Concluída': return 'bg-emerald-500 text-white shadow-sm';
+      case 'Pendente': return 'bg-red-500 text-white shadow-sm';
+      case 'Em Conferência': return 'bg-blue-500 text-white shadow-sm';
+      case 'Pré Nota': return 'bg-purple-500 text-white shadow-sm';
+      case 'Em Separação': return 'bg-amber-500 text-white shadow-sm';
+      default: return 'bg-gray-500 text-white shadow-sm';
+    }
+  };
+
+  const selectedDayDetails = selectedDay ? getDayDetails(selectedDay) : null;
+
   return (
     <div className="space-y-12 pb-24 relative">
       {toast && (
@@ -80,6 +105,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
         </div>
       )}
 
+      {/* Visão Operacional */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-12 rounded-[3.5rem] border-2 border-gray-300 shadow-xl relative overflow-hidden group">
         <div className="absolute top-0 left-0 w-2 h-full bg-[#005c3e]"></div>
         <div className="z-10">
@@ -91,6 +117,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
         </button>
       </div>
 
+      {/* Seção de Alertas Críticos (Abaixo da Visão Operacional) */}
+      {allCriticalItems.length > 0 && (
+        <div className="bg-red-50 border-4 border-red-200 p-10 rounded-[3.5rem] shadow-xl animate-fadeIn">
+          <div className="flex items-center gap-6 mb-8">
+            <div className="w-12 h-12 bg-red-600 text-white rounded-2xl flex items-center justify-center text-2xl animate-pulse">⚠️</div>
+            <div>
+              <h3 className="text-2xl font-black text-red-900 uppercase tracking-tighter italic">Alertas de Atraso Nano</h3>
+              <p className="text-[10px] font-black text-red-600 uppercase tracking-[0.3em]">Existem {allCriticalItems.length} itens aguardando ação imediata há mais de 3 dias.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {allCriticalItems.slice(0, 6).map((item, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-2xl border-2 border-red-100 flex items-center justify-between group hover:border-red-500 transition-all">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{(item as any).tipo}</p>
+                  <p className="text-xl font-black text-gray-900 italic">#{(item as any).numero}</p>
+                </div>
+                <div className="text-right">
+                  <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-lg ${getStatusColor((item as any).status)}`}>{(item as any).status}</span>
+                  <p className="text-[9px] font-bold text-gray-400 mt-1 italic">Desde {format(parseISO((item as any).data), 'dd/MM')}</p>
+                </div>
+              </div>
+            ))}
+            {allCriticalItems.length > 6 && (
+              <div className="flex items-center justify-center p-6 bg-red-100/50 rounded-2xl border-2 border-dashed border-red-200">
+                <p className="text-xs font-black text-red-700 uppercase tracking-widest">+{allCriticalItems.length - 6} alertas</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {monthStats.map((stat) => (
           <div key={stat.label} className="bg-white p-10 rounded-[3rem] shadow-xl border-2 border-gray-300 flex items-center gap-8 hover:-translate-y-2 transition-all border-b-[12px] border-b-emerald-600">
@@ -107,6 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
         ))}
       </div>
 
+      {/* Agenda Nano */}
       <div className="bg-white p-12 rounded-[4rem] shadow-2xl border-2 border-gray-300">
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10 mb-16">
           <div className="flex items-center gap-10">
@@ -139,7 +199,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
             return (
               <div 
                 key={i} 
-                onClick={() => { if(isCurrentMonth) setSelectedDay(date); }} 
+                onClick={() => { if(isCurrentMonth && hasItems) { setSelectedDay(date); setActiveTab('notas'); } }} 
                 className={`min-h-[160px] p-8 rounded-[2.5rem] flex flex-col justify-between group relative overflow-hidden
                   ${getDayStatusStyle(date)} 
                   ${hasItems && isCurrentMonth ? 'hover:scale-105 active:scale-95 cursor-pointer shadow-2xl' : ''}
@@ -157,23 +217,132 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
         </div>
       </div>
 
+      {/* Modal de Detalhes do Dia (COM ABAS) */}
+      {selectedDay && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-fadeIn">
+          <div className="bg-white w-full max-w-5xl rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-4 border-gray-400 h-[85vh]">
+            {/* Header Modal */}
+            <div className="p-10 bg-[#005c3e] text-white flex justify-between items-center shrink-0">
+              <div>
+                <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Detalhamento Nano</h3>
+                <p className="text-[10px] font-black uppercase opacity-60 tracking-[0.3em] mt-3">{format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+              </div>
+              <button onClick={() => setSelectedDay(null)} className="p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all border-2 border-white/20">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* Sistema de Abas */}
+            <div className="flex bg-gray-50 border-b-2 border-gray-100 shrink-0">
+               <button onClick={() => setActiveTab('notas')} className={`flex-1 py-8 font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'notas' ? 'text-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                 Notas Fiscais ({selectedDayDetails?.notas.length})
+                 {activeTab === 'notas' && <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600"></div>}
+               </button>
+               <button onClick={() => setActiveTab('ordens')} className={`flex-1 py-8 font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'ordens' ? 'text-emerald-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                 Ordens ({selectedDayDetails?.ordens.length})
+                 {activeTab === 'ordens' && <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600"></div>}
+               </button>
+               {!isGuest && (
+                 <button onClick={() => setActiveTab('comentarios')} className={`flex-1 py-8 font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'comentarios' ? 'text-purple-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                   Apontamentos ({selectedDayDetails?.comentarios.length})
+                   {activeTab === 'comentarios' && <div className="absolute bottom-0 left-0 w-full h-1 bg-purple-600"></div>}
+                 </button>
+               )}
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+              {/* Conteúdo Aba Notas */}
+              {activeTab === 'notas' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+                  {selectedDayDetails?.notas.map(n => (
+                    <div key={n.id} className="p-8 bg-gray-50 border-2 border-gray-200 rounded-[3rem] hover:border-blue-400 transition-all border-l-[16px] border-l-blue-600 shadow-sm">
+                      <div className="flex justify-between items-start mb-6">
+                        <p className="text-3xl font-black text-gray-900 italic tracking-tighter">#{n.numero}</p>
+                        <span className={`text-[10px] font-black uppercase px-4 py-2 rounded-xl ${getStatusColor(n.status)}`}>{n.status}</span>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Fornecedor: <span className="text-blue-900">{n.fornecedor}</span></p>
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Conferente: <span className="text-gray-900">{n.conferente}</span></p>
+                      </div>
+                      {n.observacao && <div className="mt-8 text-sm text-gray-600 italic font-medium leading-relaxed bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-inner">"{n.observacao}"</div>}
+                    </div>
+                  ))}
+                  {selectedDayDetails?.notas.length === 0 && (
+                    <div className="col-span-2 py-24 text-center">
+                       <p className="text-gray-300 font-black text-[12px] uppercase tracking-[0.4em]">Nenhuma nota registrada nesta data.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Conteúdo Aba Ordens */}
+              {activeTab === 'ordens' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+                  {selectedDayDetails?.ordens.map(o => (
+                    <div key={o.id} className="p-8 bg-gray-50 border-2 border-gray-200 rounded-[3rem] hover:border-emerald-400 transition-all border-l-[16px] border-l-emerald-600 shadow-sm">
+                      <div className="flex justify-between items-start mb-6">
+                        <p className="text-3xl font-black text-gray-900 italic tracking-tighter">#{o.numero}</p>
+                        <span className={`text-[10px] font-black uppercase px-4 py-2 rounded-xl ${getStatusColor(o.status)}`}>{o.status}</span>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Documento: <span className="text-emerald-900">{o.documento}</span></p>
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Conferente: <span className="text-gray-900">{o.conferente}</span></p>
+                      </div>
+                      {o.observacao && <div className="mt-8 text-sm text-gray-600 italic font-medium leading-relaxed bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-inner">"{o.observacao}"</div>}
+                    </div>
+                  ))}
+                  {selectedDayDetails?.ordens.length === 0 && (
+                    <div className="col-span-2 py-24 text-center">
+                       <p className="text-gray-300 font-black text-[12px] uppercase tracking-[0.4em]">Nenhuma ordem registrada nesta data.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Conteúdo Aba Apontamentos */}
+              {activeTab === 'comentarios' && !isGuest && (
+                <div className="space-y-6 animate-fadeIn">
+                  {selectedDayDetails?.comentarios.map(c => (
+                    <div key={c.id} className="p-10 bg-white border-2 border-purple-100 rounded-[3rem] shadow-sm italic text-gray-700 text-lg font-medium border-l-[24px] border-l-purple-500 shadow-inner">
+                      "{c.texto}"
+                    </div>
+                  ))}
+                  {selectedDayDetails?.comentarios.length === 0 && (
+                    <div className="py-24 text-center">
+                       <p className="text-gray-300 font-black text-[12px] uppercase tracking-[0.4em]">Nenhum apontamento registrado nesta data.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-10 bg-gray-50 border-t-2 border-gray-100 shrink-0">
+               <button onClick={() => setSelectedDay(null)} className="w-full py-6 bg-[#005c3e] text-white font-black rounded-3xl shadow-xl hover:bg-emerald-900 transition-all uppercase tracking-widest text-xs border-b-8 border-emerald-950 active:translate-y-1">Fechar Detalhamento</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Análise Nano IA (AMPLIADO para max-w-7xl) */}
       {showAnalysisModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-4 border-gray-400">
-             <div className="p-12 bg-[#005c3e] text-white flex justify-between items-center">
+          <div className="bg-white w-full max-w-7xl rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-4 border-gray-400 h-[85vh]">
+             <div className="p-12 bg-[#005c3e] text-white flex justify-between items-center shrink-0">
                 <div>
-                  <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Análise Nano IA</h3>
-                  <p className="text-[10px] font-black uppercase opacity-60 tracking-[0.3em] mt-3">Insights de Performance Industrial</p>
+                  <h3 className="text-4xl font-black uppercase tracking-tighter italic leading-none">Relatório Estratégico Nano IA</h3>
+                  <p className="text-[10px] font-black uppercase opacity-60 tracking-[0.3em] mt-3">Diagnóstico Industrial em Tempo Real</p>
                 </div>
                 <button onClick={() => setShowAnalysisModal(false)} className="p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all border-2 border-white/20">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
              </div>
-             <div className="p-14 text-center">
-                <div className="text-2xl font-bold text-gray-800 leading-relaxed italic bg-emerald-50 p-12 rounded-[3rem] border-2 border-emerald-200 shadow-inner">
-                  {analysis || "Sincronizando com a rede Nano..."}
+             <div className="p-14 flex-1 overflow-y-auto custom-scrollbar">
+                <div className="text-2xl font-bold text-gray-800 leading-relaxed italic bg-emerald-50 p-12 lg:p-16 rounded-[4rem] border-2 border-emerald-200 shadow-inner min-h-full whitespace-pre-wrap">
+                  {analysis || "Sincronizando processamento Nano IA..."}
                 </div>
-                <button onClick={() => setShowAnalysisModal(false)} className="w-full mt-12 py-8 bg-[#005c3e] text-white font-black rounded-3xl shadow-2xl hover:bg-emerald-900 transition-all uppercase tracking-widest text-xs border-b-8 border-emerald-950 active:translate-y-1">Entendido</button>
+             </div>
+             <div className="p-10 bg-gray-50 border-t-2 border-gray-100 shrink-0">
+                <button onClick={() => setShowAnalysisModal(false)} className="w-full py-8 bg-[#005c3e] text-white font-black rounded-3xl shadow-2xl hover:bg-emerald-900 transition-all uppercase tracking-widest text-xs border-b-8 border-emerald-950 active:translate-y-1">Confirmar Leitura</button>
              </div>
           </div>
         </div>

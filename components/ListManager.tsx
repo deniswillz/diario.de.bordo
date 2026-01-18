@@ -129,7 +129,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
     end: endOfWeek(endOfMonth(currentCalendarDate))
   });
 
-  const fieldLabel = type === 'nota' ? 'Nota Fiscal' : type === 'ordem' ? 'Ordem de Produção' : 'Comentário';
+  const fieldLabel = type === 'nota' ? 'Nota Fiscal' : type === 'ordem' ? 'Ordem' : 'Apontamento';
 
   return (
     <div className="pb-24 relative">
