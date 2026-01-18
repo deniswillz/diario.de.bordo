@@ -32,29 +32,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Monitor de Backup Automático sincronizado via Supabase
-  useEffect(() => {
-    const backupInterval = setInterval(async () => {
-      const now = new Date();
-      if (now.getHours() === 17 && now.getMinutes() === 45) {
-        const todayStr = now.toDateString();
-        const lastAutoBackup = await db.system.getSetting('last_auto_backup_date');
-
-        if (lastAutoBackup !== todayStr && data.notas.length > 0) {
-          console.log("Iniciando backup automático Nano (17:45)...");
-          try {
-            await db.system.createBackup(data, 'automatico');
-            await db.system.setSetting('last_auto_backup_date', todayStr);
-          } catch (err) {
-            console.error("Falha no backup automático Nano:", err);
-          }
-        }
-      }
-    }, 60000);
-
-    return () => clearInterval(backupInterval);
-  }, [data]);
-
   useEffect(() => {
     refreshData();
     const channel = supabase.channel('nano-db-changes')
@@ -86,6 +63,10 @@ const App: React.FC = () => {
     sessionStorage.removeItem('active_user');
   };
 
+  const handleNavigate = (section: 'notas' | 'ordens' | 'comentarios') => {
+    setCurrentSection(section);
+  };
+
   if (!user && !isGuest) {
     return <Auth onLogin={handleLogin} onGuest={() => setIsGuest(true)} />;
   }
@@ -108,6 +89,7 @@ const App: React.FC = () => {
           onRunAnalysis={handleSmartAnalysis}
           onRefresh={refreshData}
           isGuest={isGuest}
+          onNavigateToList={handleNavigate}
         />
       )}
       {currentSection === 'notas' && (
@@ -143,7 +125,6 @@ const App: React.FC = () => {
           onRefresh={refreshData}
         />
       )}
-      {/* Liberado para todos logados, o componente interno AdminPanel fará a filtragem por cargo */}
       {currentSection === 'admin' && !isGuest && (
         <AdminPanel currentData={data} onRefresh={refreshData} />
       )}

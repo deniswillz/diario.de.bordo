@@ -27,10 +27,9 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
         .eq('username', safeUsername)
         .maybeSingle();
 
-      if (userError || !user) throw new Error('Credenciais Nano não reconhecidas.');
+      if (userError || !user) throw new Error('Credenciais não reconhecidas.');
       if (user.password !== password) throw new Error('Senha incorreta.');
 
-      // Login realizado SEM localStorage - sessão em memória
       onLogin(user);
     } catch (e: any) {
       setError(e.message);
@@ -40,71 +39,94 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#005c3e] flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Elementos visuais Nano ao fundo */}
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-700/20 rounded-full blur-[100px]"></div>
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-900/40 rounded-full blur-[100px]"></div>
+    <div className="min-h-screen bg-[#005c3e] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Marca d'água de fundo */}
+      <div className="absolute top-10 right-10 opacity-5 select-none pointer-events-none">
+        <span className="text-[30rem] font-black italic leading-none">N</span>
+      </div>
 
-      <div className="w-full max-w-lg bg-white rounded-[4rem] shadow-[0_40px_100px_-15px_rgba(0,0,0,0.5)] overflow-hidden animate-scaleIn border-4 border-gray-400 relative z-10">
-        <div className="bg-[#005c3e] p-16 text-center relative">
-           <div className="absolute top-0 right-0 p-10 text-white/5 text-8xl font-black italic">N</div>
-           <div className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-2xl transform rotate-12">
-              <span className="text-[#005c3e] text-5xl font-black italic">N</span>
-           </div>
-           <h1 className="text-white text-4xl font-black tracking-tighter uppercase italic leading-none">Nano Pro</h1>
-           <p className="text-emerald-100 text-[10px] font-black mt-4 opacity-60 uppercase tracking-[0.5em]">Logística Industrial Inteligente</p>
+      <div className="flex flex-col items-center justify-center w-full max-w-md z-10 animate-fadeIn">
+        {/* Seção de Identidade Visual (Logo e Slogan) */}
+        <div className="text-center mb-8">
+          <div className="inline-block bg-white p-8 rounded-[2.5rem] shadow-2xl transform -rotate-6 mb-8 border-4 border-emerald-900/10">
+            <span className="text-[#005c3e] text-6xl font-black italic select-none">N</span>
+          </div>
+          <h1 className="text-white text-5xl md:text-6xl font-black italic tracking-tighter uppercase mb-4 leading-none">
+            NANO PRO
+          </h1>
+          <p className="text-emerald-100/70 text-[10px] md:text-xs font-bold tracking-[0.4em] uppercase">
+            Logística Industrial Inteligente
+          </p>
         </div>
-        
-        <div className="p-12 lg:p-16 bg-white">
-          {error && (
-            <div className="mb-10 p-6 bg-red-50 text-red-600 rounded-2xl text-[11px] font-black border-2 border-red-100 uppercase tracking-widest animate-shake">
-              ⚠️ {error}
-            </div>
-          )}
-          
+
+        {/* Cartão de Login */}
+        <div className="w-full bg-white rounded-[2.5rem] shadow-2xl p-10 animate-scaleIn border-4 border-emerald-950/10 mb-10">
           <form onSubmit={handleLogin} className="space-y-8">
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.3em] ml-2">ID Acesso Nano</label>
-              <input 
-                type="text" 
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                className="w-full px-8 py-5 bg-gray-50 border-2 border-gray-200 rounded-3xl focus:border-[#005c3e] outline-none transition-all text-xl font-bold shadow-inner"
-                placeholder="USUÁRIO"
-                required
-              />
+            {error && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase text-center border-2 border-red-100 animate-shake">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center gap-2 mb-3 text-gray-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7z" /></svg>
+                  <label className="text-[10px] font-black uppercase tracking-widest">Login</label>
+                </div>
+                <input 
+                  type="text" 
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  className="w-full px-6 py-4 bg-[#f8fafc] border-2 border-blue-50/50 rounded-2xl outline-none focus:border-emerald-600 transition-all text-gray-700 font-bold shadow-inner"
+                  placeholder="Seu login"
+                  required
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-3 text-gray-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  <label className="text-[10px] font-black uppercase tracking-widest">Senha</label>
+                </div>
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full px-6 py-4 bg-[#f8fafc] border-2 border-blue-50/50 rounded-2xl outline-none focus:border-emerald-600 transition-all text-gray-700 font-bold shadow-inner"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.3em] ml-2">Senha Operacional</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full px-8 py-5 bg-gray-50 border-2 border-gray-200 rounded-3xl focus:border-[#005c3e] outline-none transition-all text-xl font-bold shadow-inner"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-[#005c3e] text-white font-black py-6 rounded-[2rem] shadow-2xl hover:bg-emerald-900 transition-all disabled:opacity-50 uppercase text-xs tracking-[0.3em] border-b-8 border-emerald-950 active:translate-y-2 active:border-b-0"
+              className="w-full bg-[#005c3e] text-white font-black py-5 rounded-2xl shadow-xl hover:bg-emerald-900 transition-all uppercase text-sm tracking-widest border-b-6 border-emerald-950 active:translate-y-1"
             >
-              {loading ? 'Validando...' : 'Autenticar Sistema'}
+              {loading ? 'Sincronizando...' : 'Entrar'}
             </button>
-          </form>
 
-          <div className="mt-12 pt-10 border-t-2 border-gray-100 text-center">
-            <button 
-              onClick={onGuest}
-              className="text-gray-400 hover:text-[#005c3e] text-[10px] font-black transition-all uppercase tracking-[0.3em] border-b-2 border-transparent hover:border-emerald-600"
-            >
-              👁️ MODO CONSULTA (GUEST)
-            </button>
-          </div>
+            <div className="text-center pt-2">
+              <button 
+                type="button"
+                onClick={onGuest}
+                className="text-gray-400 hover:text-emerald-700 text-[9px] font-black uppercase tracking-widest transition-colors"
+              >
+                Modo Consulta (Visitante)
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Rodapé de Copyright - Agora mais visível e fixo na hierarquia flex */}
+        <div className="text-center pb-4">
+          <p className="text-emerald-200/50 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
+            Nano Pro &copy; 2026 - Gestão Industrial de Alta Performance
+          </p>
         </div>
       </div>
-      <p className="fixed bottom-10 text-white/30 text-[9px] font-black uppercase tracking-[1em]">Nano Tech Security System</p>
     </div>
   );
 };

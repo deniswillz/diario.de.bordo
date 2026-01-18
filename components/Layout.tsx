@@ -37,7 +37,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
   if (!isGuest) navItems.push({ id: 'comentarios', label: 'Apontamentos', icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z' });
   
   if (!isGuest) {
-    // Rótulo alterado de 'Gestão & Perfil' para 'Configuração'
     navItems.push({ id: 'admin', label: 'Configuração', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' });
   }
 
@@ -68,7 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
              </button>
 
              {showNotifications && (
-               <div className="absolute right-0 mt-4 w-96 bg-white rounded-[2.5rem] shadow-2xl border-4 border-gray-100 text-gray-900 z-[100] overflow-hidden animate-scaleIn">
+               <div className="absolute right-0 mt-4 w-96 bg-white rounded-3xl shadow-2xl border-4 border-gray-100 text-gray-900 z-[100] overflow-hidden animate-scaleIn">
                   <div className="p-8 bg-gray-50 border-b-2 border-gray-100 flex justify-between items-center">
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 leading-none">Central Nano</span>
@@ -86,14 +85,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
                           onClick={() => { onSectionChange(item.section); setShowNotifications(false); }}
                           className="p-6 border-b border-gray-100 hover:bg-emerald-50 cursor-pointer transition-all flex items-start gap-5 group"
                         >
-                          <div className="w-12 h-12 shrink-0 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center text-sm font-black border-2 border-red-200 shadow-sm group-hover:scale-110 transition-transform">!</div>
+                          <div className="w-10 h-10 shrink-0 bg-red-100 text-red-600 rounded-xl flex items-center justify-center text-sm font-black border-2 border-red-200 shadow-sm group-hover:scale-110 transition-transform">!</div>
                           <div className="flex-1">
                             <div className="flex justify-between items-start">
                               <p className="text-sm font-black text-gray-900">#{item.numero} - {item.tipo}</p>
                               <p className="text-[10px] font-bold text-gray-400 italic">{format(parseISO(item.d), 'dd/MM')}</p>
                             </div>
                             <p className="text-[10px] font-black text-red-500 uppercase tracking-tight mt-1 bg-red-50 px-2 py-0.5 rounded w-fit border border-red-100">Status: {item.status}</p>
-                            <p className="text-[9px] font-bold text-gray-500 mt-2 leading-relaxed">Este documento está em atraso operacional Nano há mais de 3 dias.</p>
                           </div>
                         </div>
                       ))
@@ -102,15 +100,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
                         <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                         </div>
-                        <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] leading-relaxed">Nenhum alerta crítico Nano pendente.</p>
+                        <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] leading-relaxed">Nenhum alerta crítico.</p>
                       </div>
                     )}
                   </div>
-                  {criticalItems.length > 0 && (
-                    <div className="p-6 bg-gray-50 text-center border-t border-gray-100">
-                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Ação imediata recomendada</p>
-                    </div>
-                  )}
                </div>
              )}
           </div>
@@ -127,7 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
             </div>
           </div>
 
-          <button onClick={onLogout} className="p-3 hover:bg-red-600 rounded-xl transition-all border-2 border-white/20 shadow-lg active:scale-90" title="Desconectar">
+          <button onClick={onLogout} className="p-3 hover:bg-red-600 rounded-xl transition-all border-2 border-white/20 shadow-lg active:scale-90">
              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
           </button>
         </div>
@@ -147,7 +140,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
                 <button
                   key={item.id}
                   onClick={() => { onSectionChange(item.id); setSidebarOpen(false); }}
-                  className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all border-2 ${
+                  className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all border-2 ${
                     currentSection === item.id ? 'bg-[#005c3e] text-white shadow-xl border-emerald-950 scale-[1.02]' : 'text-gray-500 hover:bg-gray-100 border-transparent'
                   }`}
                 >
@@ -156,9 +149,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
                 </button>
               ))}
             </nav>
-            <div className="p-6 border-t-2 border-gray-100 bg-gray-50 text-center">
-               <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.3em]">v3.2.0 Cloud Active</p>
-            </div>
           </div>
         </aside>
 
