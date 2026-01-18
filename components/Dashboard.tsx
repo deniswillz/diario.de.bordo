@@ -26,14 +26,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Estatísticas filtradas pelo mês visível
   const monthStats = useMemo(() => {
     const monthStr = format(viewDate, 'yyyy-MM');
-    
     const notasMes = data.notas.filter(n => n.data.startsWith(monthStr));
     const ordensMes = data.ordens.filter(o => o.data.startsWith(monthStr));
     const comentariosMes = data.comentarios.filter(c => c.data.startsWith(monthStr));
-    
     const criticosMes = [
       ...notasMes.filter(n => ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status) && differenceInDays(today, parseISO(n.data)) >= 3),
       ...ordensMes.filter(o => o.status === 'Em Separação' && differenceInDays(today, parseISO(o.data)) >= 3)
@@ -47,7 +44,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
     ];
   }, [data, viewDate, today]);
 
-  // Itens Críticos Gerais para a Seção de Alertas
   const allCriticalItems = useMemo(() => {
     const notasCrit = data.notas.filter(n => ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status) && differenceInDays(today, parseISO(n.data)) >= 3);
     const ordensCrit = data.ordens.filter(o => o.status === 'Em Separação' && differenceInDays(today, parseISO(o.data)) >= 3);
@@ -117,7 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
         </button>
       </div>
 
-      {/* Seção de Alertas Críticos (Abaixo da Visão Operacional) */}
+      {/* Alertas Críticos */}
       {allCriticalItems.length > 0 && (
         <div className="bg-red-50 border-4 border-red-200 p-10 rounded-[3.5rem] shadow-xl animate-fadeIn">
           <div className="flex items-center gap-6 mb-8">
@@ -140,11 +136,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
                 </div>
               </div>
             ))}
-            {allCriticalItems.length > 6 && (
-              <div className="flex items-center justify-center p-6 bg-red-100/50 rounded-2xl border-2 border-dashed border-red-200">
-                <p className="text-xs font-black text-red-700 uppercase tracking-widest">+{allCriticalItems.length - 6} alertas</p>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -217,130 +208,110 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
         </div>
       </div>
 
-      {/* Modal de Detalhes do Dia (COM ABAS) */}
+      {/* Modal de Detalhes do Dia - REESTRUTURADO MINIMALISTA */}
       {selectedDay && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-fadeIn">
-          <div className="bg-white w-full max-w-6xl rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-4 border-gray-400 h-[85vh]">
-            {/* Header Modal */}
-            <div className="p-8 bg-[#005c3e] text-white flex justify-between items-center shrink-0">
-              <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center transform -rotate-6 shadow-xl">
-                  <span className="text-[#005c3e] font-black text-2xl italic">N</span>
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-5xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-2 border-gray-200 h-[80vh]">
+            
+            {/* Header Reduzido */}
+            <div className="px-8 py-5 bg-[#005c3e] text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-lg transform -rotate-3">
+                  <span className="text-[#005c3e] font-black text-lg italic">N</span>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black uppercase tracking-tighter italic leading-none">Detalhamento Nano</h3>
-                  <p className="text-[9px] font-black uppercase opacity-60 tracking-[0.3em] mt-2">{format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                  <h3 className="text-lg font-black uppercase tracking-tight italic">Detalhamento Nano</h3>
+                  <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedDay(null)} className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all border-2 border-white/20">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={() => setSelectedDay(null)} className="p-2 hover:bg-white/20 rounded-full transition-all">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
-            {/* Sistema de Abas */}
-            <div className="flex bg-gray-50 border-b-2 border-gray-100 shrink-0 overflow-x-auto custom-scrollbar">
-               <button onClick={() => setActiveTab('notas')} className={`flex-1 min-w-[150px] py-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'notas' ? 'text-blue-700 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                 Notas Fiscais ({selectedDayDetails?.notas.length})
-                 {activeTab === 'notas' && <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600"></div>}
+            {/* Abas Minimalistas */}
+            <div className="flex bg-gray-50 border-b border-gray-100 shrink-0">
+               <button onClick={() => setActiveTab('notas')} className={`flex-1 py-4 font-black text-[10px] uppercase tracking-[0.2em] transition-all border-b-2 ${activeTab === 'notas' ? 'text-blue-600 border-blue-600 bg-white' : 'text-gray-400 border-transparent hover:text-gray-600'}`}>
+                 Notas ({selectedDayDetails?.notas.length})
                </button>
-               <button onClick={() => setActiveTab('ordens')} className={`flex-1 min-w-[150px] py-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'ordens' ? 'text-emerald-700 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+               <button onClick={() => setActiveTab('ordens')} className={`flex-1 py-4 font-black text-[10px] uppercase tracking-[0.2em] transition-all border-b-2 ${activeTab === 'ordens' ? 'text-emerald-600 border-emerald-600 bg-white' : 'text-gray-400 border-transparent hover:text-gray-600'}`}>
                  Ordens ({selectedDayDetails?.ordens.length})
-                 {activeTab === 'ordens' && <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600"></div>}
                </button>
                {!isGuest && (
-                 <button onClick={() => setActiveTab('comentarios')} className={`flex-1 min-w-[150px] py-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'comentarios' ? 'text-purple-700 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                   Apontamentos ({selectedDayDetails?.comentarios.length})
-                   {activeTab === 'comentarios' && <div className="absolute bottom-0 left-0 w-full h-1 bg-purple-600"></div>}
+                 <button onClick={() => setActiveTab('comentarios')} className={`flex-1 py-4 font-black text-[10px] uppercase tracking-[0.2em] transition-all border-b-2 ${activeTab === 'comentarios' ? 'text-purple-600 border-purple-600 bg-white' : 'text-gray-400 border-transparent hover:text-gray-600'}`}>
+                   Notas Nano ({selectedDayDetails?.comentarios.length})
                  </button>
                )}
             </div>
             
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-gray-50/30">
-              {/* Conteúdo Aba Notas */}
-              {activeTab === 'notas' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
-                  {selectedDayDetails?.notas.map(n => (
-                    <div key={n.id} className="p-6 bg-white border-2 border-gray-200 rounded-[2.5rem] hover:border-blue-400 transition-all border-l-[12px] border-l-blue-600 shadow-sm flex flex-col justify-between h-full">
-                      <div>
-                        <div className="flex justify-between items-start mb-4">
-                          <p className="text-xl font-black text-gray-900 italic tracking-tighter leading-none">#{n.numero}</p>
-                          <span className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-lg ${getStatusColor(n.status)}`}>{n.status}</span>
-                        </div>
-                        <div className="space-y-1.5">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Fornecedor: <span className="text-blue-900 block mt-0.5">{n.fornecedor}</span></p>
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Conferente: <span className="text-gray-900 block mt-0.5">{n.conferente}</span></p>
-                        </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-white custom-scrollbar">
+              {/* Grid Ultra Clean */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeIn">
+                
+                {activeTab === 'notas' && selectedDayDetails?.notas.map(n => (
+                  <div key={n.id} className="p-5 bg-gray-50 border border-gray-200 rounded-3xl hover:border-blue-300 transition-all flex flex-col justify-between group">
+                    <div>
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">#{n.numero}</span>
+                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${getStatusColor(n.status)}`}>{n.status}</span>
                       </div>
-                      {n.observacao && (
-                        <div className="mt-4 text-[11px] text-gray-600 italic font-medium leading-relaxed bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                          "{n.observacao}"
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {selectedDayDetails?.notas.length === 0 && (
-                    <div className="col-span-full py-20 text-center">
-                       <p className="text-gray-300 font-black text-[10px] uppercase tracking-[0.4em]">Nenhuma nota registrada nesta data.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Conteúdo Aba Ordens */}
-              {activeTab === 'ordens' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
-                  {selectedDayDetails?.ordens.map(o => (
-                    <div key={o.id} className="p-6 bg-white border-2 border-gray-200 rounded-[2.5rem] hover:border-emerald-400 transition-all border-l-[12px] border-l-emerald-600 shadow-sm flex flex-col justify-between h-full">
-                      <div>
-                        <div className="flex justify-between items-start mb-4">
-                          <p className="text-xl font-black text-gray-900 italic tracking-tighter leading-none">#{o.numero}</p>
-                          <span className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-lg ${getStatusColor(o.status)}`}>{o.status}</span>
-                        </div>
-                        <div className="space-y-1.5">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Documento: <span className="text-emerald-900 block mt-0.5">{o.documento}</span></p>
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Conferente: <span className="text-gray-900 block mt-0.5">{o.conferente}</span></p>
-                        </div>
+                      <h4 className="text-xs font-black text-gray-900 line-clamp-1 uppercase tracking-tight">{n.fornecedor}</h4>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Responsável: <span className="text-gray-700">{n.conferente}</span></p>
                       </div>
-                      {o.observacao && (
-                        <div className="mt-4 text-[11px] text-gray-600 italic font-medium leading-relaxed bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50">
-                          "{o.observacao}"
-                        </div>
-                      )}
                     </div>
-                  ))}
-                  {selectedDayDetails?.ordens.length === 0 && (
-                    <div className="col-span-full py-20 text-center">
-                       <p className="text-gray-300 font-black text-[10px] uppercase tracking-[0.4em]">Nenhuma ordem registrada nesta data.</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                    {n.observacao && (
+                      <div className="mt-4 p-3 bg-white border border-gray-100 rounded-xl text-[10px] text-gray-500 italic font-medium leading-tight">
+                        "{n.observacao}"
+                      </div>
+                    )}
+                  </div>
+                ))}
 
-              {/* Conteúdo Aba Apontamentos */}
-              {activeTab === 'comentarios' && !isGuest && (
-                <div className="space-y-4 animate-fadeIn max-w-4xl mx-auto">
-                  {selectedDayDetails?.comentarios.map(c => (
-                    <div key={c.id} className="p-8 bg-white border-2 border-purple-100 rounded-[2.5rem] shadow-sm italic text-gray-700 text-sm font-medium border-l-[16px] border-l-purple-500 shadow-inner">
-                      "{c.texto}"
+                {activeTab === 'ordens' && selectedDayDetails?.ordens.map(o => (
+                  <div key={o.id} className="p-5 bg-gray-50 border border-gray-200 rounded-3xl hover:border-emerald-300 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">#{o.numero}</span>
+                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${getStatusColor(o.status)}`}>{o.status}</span>
+                      </div>
+                      <h4 className="text-xs font-black text-gray-900 line-clamp-1 uppercase tracking-tight">{o.documento}</h4>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Responsável: <span className="text-gray-700">{o.conferente}</span></p>
+                      </div>
                     </div>
-                  ))}
-                  {selectedDayDetails?.comentarios.length === 0 && (
-                    <div className="py-20 text-center">
-                       <p className="text-gray-300 font-black text-[10px] uppercase tracking-[0.4em]">Nenhum apontamento registrado nesta data.</p>
+                    {o.observacao && (
+                      <div className="mt-4 p-3 bg-white border border-gray-100 rounded-xl text-[10px] text-gray-500 italic font-medium leading-tight">
+                        "{o.observacao}"
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {activeTab === 'comentarios' && selectedDayDetails?.comentarios.map(c => (
+                  <div key={c.id} className="col-span-full p-6 bg-purple-50/50 border border-purple-100 rounded-[2rem] italic text-gray-600 text-sm font-medium border-l-8 border-l-purple-400">
+                    "{c.texto}"
+                  </div>
+                ))}
+
+                {((activeTab === 'notas' && selectedDayDetails?.notas.length === 0) || 
+                  (activeTab === 'ordens' && selectedDayDetails?.ordens.length === 0) || 
+                  (activeTab === 'comentarios' && selectedDayDetails?.comentarios.length === 0)) && (
+                    <div className="col-span-full py-20 text-center opacity-30">
+                       <p className="text-[10px] font-black uppercase tracking-[0.5em]">Sem registros</p>
                     </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
             
-            <div className="p-8 bg-white border-t-2 border-gray-100 shrink-0">
-               <button onClick={() => setSelectedDay(null)} className="w-full py-5 bg-[#005c3e] text-white font-black rounded-[2rem] shadow-xl hover:bg-emerald-900 transition-all uppercase tracking-widest text-[10px] border-b-6 border-emerald-950 active:translate-y-1">Fechar Detalhamento</button>
+            <div className="px-8 py-5 bg-gray-50 border-t border-gray-100">
+               <button onClick={() => setSelectedDay(null)} className="w-full py-3 bg-[#005c3e] text-white font-black rounded-2xl text-[10px] uppercase tracking-[0.3em] shadow-lg border-b-4 border-emerald-950 active:translate-y-1 transition-all">Sair do Detalhe</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de Análise Nano IA (AMPLIADO para max-w-7xl) */}
+      {/* Modal de Análise Nano IA */}
       {showAnalysisModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl animate-fadeIn">
           <div className="bg-white w-full max-w-7xl rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-4 border-gray-400 h-[85vh]">
