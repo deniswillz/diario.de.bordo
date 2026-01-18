@@ -220,56 +220,67 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
       {/* Modal de Detalhes do Dia (COM ABAS) */}
       {selectedDay && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-fadeIn">
-          <div className="bg-white w-full max-w-5xl rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-4 border-gray-400 h-[85vh]">
+          <div className="bg-white w-full max-w-6xl rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-scaleIn border-4 border-gray-400 h-[85vh]">
             {/* Header Modal */}
-            <div className="p-10 bg-[#005c3e] text-white flex justify-between items-center shrink-0">
-              <div>
-                <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Detalhamento Nano</h3>
-                <p className="text-[10px] font-black uppercase opacity-60 tracking-[0.3em] mt-3">{format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+            <div className="p-8 bg-[#005c3e] text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-6">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center transform -rotate-6 shadow-xl">
+                  <span className="text-[#005c3e] font-black text-2xl italic">N</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter italic leading-none">Detalhamento Nano</h3>
+                  <p className="text-[9px] font-black uppercase opacity-60 tracking-[0.3em] mt-2">{format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                </div>
               </div>
-              <button onClick={() => setSelectedDay(null)} className="p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all border-2 border-white/20">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={() => setSelectedDay(null)} className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all border-2 border-white/20">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {/* Sistema de Abas */}
-            <div className="flex bg-gray-50 border-b-2 border-gray-100 shrink-0">
-               <button onClick={() => setActiveTab('notas')} className={`flex-1 py-8 font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'notas' ? 'text-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+            <div className="flex bg-gray-50 border-b-2 border-gray-100 shrink-0 overflow-x-auto custom-scrollbar">
+               <button onClick={() => setActiveTab('notas')} className={`flex-1 min-w-[150px] py-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'notas' ? 'text-blue-700 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
                  Notas Fiscais ({selectedDayDetails?.notas.length})
                  {activeTab === 'notas' && <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600"></div>}
                </button>
-               <button onClick={() => setActiveTab('ordens')} className={`flex-1 py-8 font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'ordens' ? 'text-emerald-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+               <button onClick={() => setActiveTab('ordens')} className={`flex-1 min-w-[150px] py-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'ordens' ? 'text-emerald-700 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
                  Ordens ({selectedDayDetails?.ordens.length})
                  {activeTab === 'ordens' && <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-600"></div>}
                </button>
                {!isGuest && (
-                 <button onClick={() => setActiveTab('comentarios')} className={`flex-1 py-8 font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'comentarios' ? 'text-purple-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                 <button onClick={() => setActiveTab('comentarios')} className={`flex-1 min-w-[150px] py-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'comentarios' ? 'text-purple-700 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
                    Apontamentos ({selectedDayDetails?.comentarios.length})
                    {activeTab === 'comentarios' && <div className="absolute bottom-0 left-0 w-full h-1 bg-purple-600"></div>}
                  </button>
                )}
             </div>
             
-            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-gray-50/30">
               {/* Conteúdo Aba Notas */}
               {activeTab === 'notas' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
                   {selectedDayDetails?.notas.map(n => (
-                    <div key={n.id} className="p-8 bg-gray-50 border-2 border-gray-200 rounded-[3rem] hover:border-blue-400 transition-all border-l-[16px] border-l-blue-600 shadow-sm">
-                      <div className="flex justify-between items-start mb-6">
-                        <p className="text-3xl font-black text-gray-900 italic tracking-tighter">#{n.numero}</p>
-                        <span className={`text-[10px] font-black uppercase px-4 py-2 rounded-xl ${getStatusColor(n.status)}`}>{n.status}</span>
+                    <div key={n.id} className="p-6 bg-white border-2 border-gray-200 rounded-[2.5rem] hover:border-blue-400 transition-all border-l-[12px] border-l-blue-600 shadow-sm flex flex-col justify-between h-full">
+                      <div>
+                        <div className="flex justify-between items-start mb-4">
+                          <p className="text-xl font-black text-gray-900 italic tracking-tighter leading-none">#{n.numero}</p>
+                          <span className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-lg ${getStatusColor(n.status)}`}>{n.status}</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Fornecedor: <span className="text-blue-900 block mt-0.5">{n.fornecedor}</span></p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Conferente: <span className="text-gray-900 block mt-0.5">{n.conferente}</span></p>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Fornecedor: <span className="text-blue-900">{n.fornecedor}</span></p>
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Conferente: <span className="text-gray-900">{n.conferente}</span></p>
-                      </div>
-                      {n.observacao && <div className="mt-8 text-sm text-gray-600 italic font-medium leading-relaxed bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-inner">"{n.observacao}"</div>}
+                      {n.observacao && (
+                        <div className="mt-4 text-[11px] text-gray-600 italic font-medium leading-relaxed bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                          "{n.observacao}"
+                        </div>
+                      )}
                     </div>
                   ))}
                   {selectedDayDetails?.notas.length === 0 && (
-                    <div className="col-span-2 py-24 text-center">
-                       <p className="text-gray-300 font-black text-[12px] uppercase tracking-[0.4em]">Nenhuma nota registrada nesta data.</p>
+                    <div className="col-span-full py-20 text-center">
+                       <p className="text-gray-300 font-black text-[10px] uppercase tracking-[0.4em]">Nenhuma nota registrada nesta data.</p>
                     </div>
                   )}
                 </div>
@@ -277,23 +288,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
 
               {/* Conteúdo Aba Ordens */}
               {activeTab === 'ordens' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
                   {selectedDayDetails?.ordens.map(o => (
-                    <div key={o.id} className="p-8 bg-gray-50 border-2 border-gray-200 rounded-[3rem] hover:border-emerald-400 transition-all border-l-[16px] border-l-emerald-600 shadow-sm">
-                      <div className="flex justify-between items-start mb-6">
-                        <p className="text-3xl font-black text-gray-900 italic tracking-tighter">#{o.numero}</p>
-                        <span className={`text-[10px] font-black uppercase px-4 py-2 rounded-xl ${getStatusColor(o.status)}`}>{o.status}</span>
+                    <div key={o.id} className="p-6 bg-white border-2 border-gray-200 rounded-[2.5rem] hover:border-emerald-400 transition-all border-l-[12px] border-l-emerald-600 shadow-sm flex flex-col justify-between h-full">
+                      <div>
+                        <div className="flex justify-between items-start mb-4">
+                          <p className="text-xl font-black text-gray-900 italic tracking-tighter leading-none">#{o.numero}</p>
+                          <span className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-lg ${getStatusColor(o.status)}`}>{o.status}</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Documento: <span className="text-emerald-900 block mt-0.5">{o.documento}</span></p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Conferente: <span className="text-gray-900 block mt-0.5">{o.conferente}</span></p>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Documento: <span className="text-emerald-900">{o.documento}</span></p>
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Conferente: <span className="text-gray-900">{o.conferente}</span></p>
-                      </div>
-                      {o.observacao && <div className="mt-8 text-sm text-gray-600 italic font-medium leading-relaxed bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-inner">"{o.observacao}"</div>}
+                      {o.observacao && (
+                        <div className="mt-4 text-[11px] text-gray-600 italic font-medium leading-relaxed bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50">
+                          "{o.observacao}"
+                        </div>
+                      )}
                     </div>
                   ))}
                   {selectedDayDetails?.ordens.length === 0 && (
-                    <div className="col-span-2 py-24 text-center">
-                       <p className="text-gray-300 font-black text-[12px] uppercase tracking-[0.4em]">Nenhuma ordem registrada nesta data.</p>
+                    <div className="col-span-full py-20 text-center">
+                       <p className="text-gray-300 font-black text-[10px] uppercase tracking-[0.4em]">Nenhuma ordem registrada nesta data.</p>
                     </div>
                   )}
                 </div>
@@ -301,23 +318,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
 
               {/* Conteúdo Aba Apontamentos */}
               {activeTab === 'comentarios' && !isGuest && (
-                <div className="space-y-6 animate-fadeIn">
+                <div className="space-y-4 animate-fadeIn max-w-4xl mx-auto">
                   {selectedDayDetails?.comentarios.map(c => (
-                    <div key={c.id} className="p-10 bg-white border-2 border-purple-100 rounded-[3rem] shadow-sm italic text-gray-700 text-lg font-medium border-l-[24px] border-l-purple-500 shadow-inner">
+                    <div key={c.id} className="p-8 bg-white border-2 border-purple-100 rounded-[2.5rem] shadow-sm italic text-gray-700 text-sm font-medium border-l-[16px] border-l-purple-500 shadow-inner">
                       "{c.texto}"
                     </div>
                   ))}
                   {selectedDayDetails?.comentarios.length === 0 && (
-                    <div className="py-24 text-center">
-                       <p className="text-gray-300 font-black text-[12px] uppercase tracking-[0.4em]">Nenhum apontamento registrado nesta data.</p>
+                    <div className="py-20 text-center">
+                       <p className="text-gray-300 font-black text-[10px] uppercase tracking-[0.4em]">Nenhum apontamento registrado nesta data.</p>
                     </div>
                   )}
                 </div>
               )}
             </div>
             
-            <div className="p-10 bg-gray-50 border-t-2 border-gray-100 shrink-0">
-               <button onClick={() => setSelectedDay(null)} className="w-full py-6 bg-[#005c3e] text-white font-black rounded-3xl shadow-xl hover:bg-emerald-900 transition-all uppercase tracking-widest text-xs border-b-8 border-emerald-950 active:translate-y-1">Fechar Detalhamento</button>
+            <div className="p-8 bg-white border-t-2 border-gray-100 shrink-0">
+               <button onClick={() => setSelectedDay(null)} className="w-full py-5 bg-[#005c3e] text-white font-black rounded-[2rem] shadow-xl hover:bg-emerald-900 transition-all uppercase tracking-widest text-[10px] border-b-6 border-emerald-950 active:translate-y-1">Fechar Detalhamento</button>
             </div>
           </div>
         </div>
