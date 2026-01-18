@@ -10,26 +10,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const formatSupabaseError = (error: any): string => {
   if (!error) return 'Erro desconhecido';
   if (typeof error === 'string') return error;
-  
-  const message = error.message || error.details || (error.code ? `Erro código ${error.code}` : null);
-  if (message) return message;
-  
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Erro ao processar detalhes da falha';
-  }
-};
-
-const isMissingTableError = (error: any): boolean => {
-  if (!error) return false;
-  const msg = error.message?.toLowerCase() || '';
-  return (
-    error.code === '42P01' || 
-    msg.includes('could not find the table') || 
-    msg.includes('relation "backups" does not exist') ||
-    error.status === 404
-  );
+  return error.message || error.details || 'Erro ao processar detalhes da falha';
 };
 
 export const db = {
@@ -92,6 +73,10 @@ export const db = {
       if (error) throw new Error(formatSupabaseError(error));
       return data;
     },
+    async update(userId: string, updates: Partial<User>) {
+      const { error } = await supabase.from('users').update(updates).eq('id', userId);
+      if (error) throw new Error(formatSupabaseError(error));
+    },
     async updateRole(userId: string, role: string) {
       const { error } = await supabase.from('users').update({ role }).eq('id', userId);
       if (error) throw new Error(formatSupabaseError(error));
@@ -106,6 +91,14 @@ export const db = {
     }
   },
   system: {
+    async getSetting(key: string) {
+      const { data, error } = await supabase.from('system_settings').select('value').eq('key', key).maybeSingle();
+      if (error) return null;
+      return data?.value;
+    },
+    async setSetting(key: string, value: string) {
+      await supabase.from('system_settings').upsert({ key, value });
+    },
     async clearAllData() {
       await Promise.all([
         supabase.from('notas_fiscais').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
@@ -115,84 +108,22 @@ export const db = {
     },
     async restoreFromSnapshot(snapshot: AppState) {
       await this.clearAllData();
-      
       const cleanNotas = (snapshot.notas || []).map(({ id, ...rest }) => rest);
       const cleanOrdens = (snapshot.ordens || []).map(({ id, ...rest }) => rest);
       const cleanComentarios = (snapshot.comentarios || []).map(({ id, ...rest }) => rest);
-
-      if (cleanNotas.length > 0) {
-        const { error } = await supabase.from('notas_fiscais').insert(cleanNotas);
-        if (error) throw new Error(formatSupabaseError(error));
-      }
-      if (cleanOrdens.length > 0) {
-        const { error } = await supabase.from('ordens_producao').insert(cleanOrdens);
-        if (error) throw new Error(formatSupabaseError(error));
-      }
-      if (cleanComentarios.length > 0) {
-        const { error } = await supabase.from('comentarios').insert(cleanComentarios);
-        if (error) throw new Error(formatSupabaseError(error));
-      }
+      if (cleanNotas.length > 0) await supabase.from('notas_fiscais').insert(cleanNotas);
+      if (cleanOrdens.length > 0) await supabase.from('ordens_producao').insert(cleanOrdens);
+      if (cleanComentarios.length > 0) await supabase.from('comentarios').insert(cleanComentarios);
     },
     async createBackup(snapshot: AppState, tipo: 'manual' | 'automatico' = 'manual') {
-      try {
-        const { data, error } = await supabase.from('backups').insert([{
-          data_snapshot: snapshot,
-          tipo: tipo
-        }]).select().single();
-        
-        if (error) {
-          if (isMissingTableError(error)) {
-            const missingErr = new Error("A tabela de backups não existe.");
-            (missingErr as any).isMissingTable = true;
-            throw missingErr;
-          }
-          throw new Error(formatSupabaseError(error));
-        }
-
-        const { data: allBackups } = await supabase.from('backups').select('id').order('created_at', { ascending: false });
-        if (allBackups && allBackups.length > 7) {
-          const toDelete = allBackups.slice(7).map(b => b.id);
-          await supabase.from('backups').delete().in('id', toDelete);
-        }
-
-        return data;
-      } catch (err) {
-        throw err;
-      }
+      const { data, error } = await supabase.from('backups').insert([{ data_snapshot: snapshot, tipo }]).select().single();
+      if (error) throw new Error(formatSupabaseError(error));
+      return data;
     },
     async fetchBackups() {
-      try {
-        const { data, error } = await supabase.from('backups').select('*').order('created_at', { ascending: false });
-        if (error) {
-          if (isMissingTableError(error)) {
-            const err = new Error("Tabela de backups ausente.");
-            (err as any).isMissingTable = true;
-            throw err;
-          }
-          throw new Error(formatSupabaseError(error));
-        }
-        
-        return (data || []).map(b => {
-          let snapshot = b.data_snapshot;
-          if (typeof snapshot === 'string') {
-            try {
-              snapshot = JSON.parse(snapshot);
-            } catch (e) {
-              snapshot = { notas: [], ordens: [], comentarios: [] };
-            }
-          }
-          return {
-            ...b,
-            data_snapshot: snapshot || { notas: [], ordens: [], comentarios: [] }
-          };
-        }) as Backup[];
-      } catch (err) {
-        throw err;
-      }
-    },
-    async deleteBackup(id: string) {
-      const { error } = await supabase.from('backups').delete().eq('id', id);
+      const { data, error } = await supabase.from('backups').select('*').order('created_at', { ascending: false });
       if (error) throw new Error(formatSupabaseError(error));
+      return (data || []) as Backup[];
     }
   }
 };

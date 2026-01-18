@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { User, AppState } from '../types';
-import { PasswordModal } from './PasswordModal';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,122 +16,101 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSectionChange, user, isGuest, onLogout, data }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   
-  // Cálculo dinâmico de itens críticos (pendentes há 3+ dias) para o badge
   const criticalCount = [
-    ...(data?.notas.filter(n => 
-      ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status) && 
-      differenceInDays(new Date(), new Date(n.data + 'T12:00:00')) >= 3
-    ) || []),
-    ...(data?.ordens.filter(o => 
-      o.status === 'Em Separação' && 
-      differenceInDays(new Date(), new Date(o.data + 'T12:00:00')) >= 3
-    ) || [])
+    ...(data?.notas.filter(n => ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status) && differenceInDays(new Date(), new Date(n.data + 'T12:00:00')) >= 3) || []),
+    ...(data?.ordens.filter(o => o.status === 'Em Separação' && differenceInDays(new Date(), new Date(o.data + 'T12:00:00')) >= 3) || [])
   ].length;
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'M4 6h16M4 12h16M4 18h16' },
     { id: 'notas', label: 'Notas Fiscais', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-    { id: 'ordens', label: 'Ordens de Produção', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { id: 'ordens', label: 'Ordens Produção', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   ];
 
-  if (!isGuest) {
-    navItems.push({ id: 'comentarios', label: 'Comentários', icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z' });
-  }
-
+  if (!isGuest) navItems.push({ id: 'comentarios', label: 'Apontamentos', icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z' });
+  
+  // BLOQUEIO: Apenas usuários com role 'admin' podem ver ou acessar a Gestão & Perfil
   if (user?.role === 'admin') {
-    navItems.push({ id: 'admin', label: 'Admin', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' });
+    navItems.push({ id: 'admin', label: 'Gestão & Perfil', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' });
   }
-
-  const today = new Date();
-  const formattedDate = format(today, "eeee, dd 'de' MMMM", { locale: ptBR });
 
   return (
     <div className="flex h-screen overflow-hidden flex-col">
-      {/* HEADER AGROSYSTEM */}
-      <header className="h-14 bg-[#005c3e] flex items-center justify-between px-6 shrink-0 z-50 text-white shadow-lg">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+      <header className="h-16 bg-[#005c3e] flex items-center justify-between px-6 shrink-0 z-50 text-white shadow-xl border-b-4 border-emerald-950">
+        <div className="flex items-center gap-6">
+          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="lg:hidden p-2 hover:bg-white/10 rounded-xl transition-all">
+             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
-          <div className="flex items-center gap-1.5">
-             <div className="text-xl font-bold italic tracking-tighter">A</div>
-             <div className="text-lg font-medium tracking-tight opacity-90">agrosystem</div>
+          <div className="flex items-center gap-4">
+             <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg transform -rotate-6">
+                <span className="text-[#005c3e] font-black text-xl italic">N</span>
+             </div>
+             <div className="text-2xl font-black tracking-tighter uppercase italic">nano</div>
           </div>
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 hidden sm:block">
-           <h1 className="text-sm font-bold tracking-wide">Diário de Bordo</h1>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Sino Notificação Dinâmico */}
+        <div className="flex items-center gap-4">
           <div className="relative group">
-             <button onClick={() => onSectionChange('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors relative">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                {criticalCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-[10px] font-black flex items-center justify-center rounded-full border border-[#005c3e] animate-pulse">
-                    {criticalCount}
-                  </span>
-                )}
+             <button onClick={() => onSectionChange('dashboard')} className="p-3 hover:bg-white/10 rounded-full transition-all relative border-2 border-transparent hover:border-emerald-400">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                {criticalCount > 0 && <span className="absolute top-1 right-1 w-5 h-5 bg-red-600 text-[10px] font-black flex items-center justify-center rounded-full border-2 border-[#005c3e] animate-pulse">{criticalCount}</span>}
              </button>
           </div>
 
-          <div className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-white/5 rounded-lg transition-colors cursor-pointer">
-            <span className="text-[11px] font-bold hidden sm:block">{isGuest ? 'Visitante' : user?.name || 'Usuário'}</span>
-            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center border border-white/10 shadow-inner">
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <div className="h-10 border-l border-emerald-400 opacity-30 hidden sm:block"></div>
+
+          <div className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 rounded-2xl transition-all cursor-default">
+            <div className="text-right hidden sm:block">
+               <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1 opacity-70">Usuário Nano</p>
+               <p className="text-xs font-black">{isGuest ? 'Visitante' : user?.name || 'Sistema'}</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center border-2 border-white/20 shadow-xl">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7z" /></svg>
             </div>
           </div>
 
-          <button onClick={onLogout} className="p-2 hover:bg-white/10 rounded-lg transition-colors border border-white/10" title="Sair">
-             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
+          <button onClick={onLogout} className="p-3 hover:bg-red-600 rounded-xl transition-all border-2 border-white/20 shadow-lg active:scale-90" title="Desconectar">
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
           </button>
-
-          <div className="text-[11px] font-medium opacity-80 border-l border-white/10 pl-4 hidden lg:block lowercase first-letter:uppercase">
-             {formattedDate}
-          </div>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         <aside className={`fixed inset-y-0 left-0 z-[60] w-64 bg-white border-r transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col h-full">
-            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-4">
+            <div className="p-8 border-b-2 border-gray-100 flex items-center justify-center bg-gray-50/50">
+               <div className="text-center">
+                  <p className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.4em] leading-none mb-2">Plataforma</p>
+                  <p className="text-2xl font-black text-gray-900 italic tracking-tighter">NANO PRO</p>
+               </div>
+            </div>
+            <nav className="flex-1 p-6 space-y-2 overflow-y-auto mt-4">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => { onSectionChange(item.id); setSidebarOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    currentSection === item.id ? 'bg-[#005c3e] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'
+                  className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all border-2 ${
+                    currentSection === item.id ? 'bg-[#005c3e] text-white shadow-xl border-emerald-950 scale-[1.02]' : 'text-gray-500 hover:bg-gray-100 border-transparent'
                   }`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={item.icon} />
-                  </svg>
-                  <span className="font-bold text-xs uppercase tracking-tight">{item.label}</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={item.icon} /></svg>
+                  <span className="font-black text-[11px] uppercase tracking-widest">{item.label}</span>
                 </button>
               ))}
             </nav>
-            {!isGuest && (
-              <div className="p-4 border-t">
-                <button onClick={() => setPasswordModalOpen(true)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-gray-400 hover:text-[#005c3e] transition-colors uppercase tracking-widest">
-                  ⚙️ Alterar Senha
-                </button>
-              </div>
-            )}
+            <div className="p-6 border-t-2 border-gray-100 bg-gray-50 text-center">
+               <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.3em]">v3.2.0 Cloud Active</p>
+            </div>
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-12 relative">
+          <div className="max-w-7xl mx-auto animate-fadeIn">
             {children}
           </div>
         </main>
       </div>
-
-      {user && <PasswordModal userId={user.id} isOpen={isPasswordModalOpen} onClose={() => setPasswordModalOpen(false)} />}
     </div>
   );
 };

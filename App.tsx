@@ -32,44 +32,32 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Monitor de Backup Automático às 17:45
+  // Monitor de Backup Automático sincronizado via Supabase
   useEffect(() => {
-    const backupInterval = setInterval(() => {
+    const backupInterval = setInterval(async () => {
       const now = new Date();
-      // Verifica se é 17:45
       if (now.getHours() === 17 && now.getMinutes() === 45) {
-        const lastAutoBackup = localStorage.getItem('last_auto_backup_date');
         const todayStr = now.toDateString();
+        const lastAutoBackup = await db.system.getSetting('last_auto_backup_date');
 
         if (lastAutoBackup !== todayStr && data.notas.length > 0) {
-          console.log("Iniciando backup automático de rotina (17:45)...");
-          db.system.createBackup(data, 'automatico')
-            .then(() => {
-              localStorage.setItem('last_auto_backup_date', todayStr);
-              console.log("Backup automático concluído com sucesso.");
-            })
-            .catch(err => console.error("Falha no backup automático:", err));
+          console.log("Iniciando backup automático Nano (17:45)...");
+          try {
+            await db.system.createBackup(data, 'automatico');
+            await db.system.setSetting('last_auto_backup_date', todayStr);
+          } catch (err) {
+            console.error("Falha no backup automático Nano:", err);
+          }
         }
       }
-    }, 60000); // Checa a cada minuto
+    }, 60000);
 
     return () => clearInterval(backupInterval);
   }, [data]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('diario_user');
-    const guestMode = localStorage.getItem('diario_guest_mode') === 'true';
-
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else if (guestMode) {
-      setIsGuest(true);
-    }
-
     refreshData();
-
-    // Setup Realtime
-    const channel = supabase.channel('db-changes')
+    const channel = supabase.channel('nano-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public' }, () => {
         refreshData();
       })
@@ -81,20 +69,26 @@ const App: React.FC = () => {
   }, [refreshData]);
 
   const handleSmartAnalysis = async () => {
-    setAnalysis("Analisando registros operacionais e identificando tendências...");
+    setAnalysis("Analisando registros operacionais Nano e identificando tendências...");
     const result = await analyzeDailyLogs(data);
-    setAnalysis(result || "Falha na análise.");
+    setAnalysis(result || "Falha na análise Nano.");
+  };
+
+  const handleLogin = (u: User) => {
+    setUser(u);
+    // Usamos sessionStorage apenas como referência rápida para o AdminPanel identificar o usuário logado
+    sessionStorage.setItem('active_user', JSON.stringify(u));
   };
 
   const logout = () => {
-    localStorage.removeItem('diario_user');
-    localStorage.removeItem('diario_guest_mode');
     setUser(null);
     setIsGuest(false);
+    setCurrentSection('dashboard');
+    sessionStorage.removeItem('active_user');
   };
 
   if (!user && !isGuest) {
-    return <Auth onLogin={setUser} onGuest={() => setIsGuest(true)} />;
+    return <Auth onLogin={handleLogin} onGuest={() => setIsGuest(true)} />;
   }
 
   const role: UserRole = isGuest ? 'guest' : user?.role || 'operador';
@@ -141,7 +135,7 @@ const App: React.FC = () => {
       )}
       {currentSection === 'comentarios' && !isGuest && (
         <ListManager<Comentario>
-          title="Comentários"
+          title="Apontamentos"
           items={data.comentarios}
           role={role}
           type="comentario"
@@ -150,6 +144,7 @@ const App: React.FC = () => {
           onRefresh={refreshData}
         />
       )}
+      {/* BLOQUEIO: AdminPanel agora só renderiza se o usuário for ADMIN */}
       {currentSection === 'admin' && role === 'admin' && (
         <AdminPanel currentData={data} onRefresh={refreshData} />
       )}
