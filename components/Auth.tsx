@@ -47,7 +47,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
           {/* Logo PNG */}
           <div className="flex items-center justify-center gap-4 mb-6">
             <img
-              src="/public/nano-logo.png"
+              src="/nano-logo.png"
               alt="Nano Pro"
               className="h-20 sm:h-24 object-contain filter brightness-0 invert"
             />

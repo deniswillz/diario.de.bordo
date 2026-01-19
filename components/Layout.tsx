@@ -53,7 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onSectionChange('dashboard')}>
             <img
-              src="/public/nano-logo.png"
+              src="/nano-logo.png"
               alt="Nano Pro"
               className="h-8 sm:h-10 object-contain filter brightness-0 invert"
             />
@@ -145,11 +145,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
         <aside className={`fixed inset-y-0 left-0 z-[60] w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col h-full">
             {/* Sidebar Header - Diário de Bordo */}
-            <div className="p-6 border-b border-gray-100 flex items-center justify-center bg-gray-50">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-center bg-gradient-to-br from-[#006B47]/5 to-[#006B47]/10">
               <div className="text-center">
-                <p className="text-xl font-bold text-gray-900 leading-tight">Diário</p>
-                <p className="text-xl font-bold text-gray-900 leading-tight">de</p>
-                <p className="text-xl font-bold text-gray-900 leading-tight">Bordo</p>
+                <p className="text-2xl font-black text-[#006B47] leading-tight tracking-tight">Diário</p>
+                <p className="text-2xl font-black text-[#006B47] leading-tight tracking-tight">de</p>
+                <p className="text-2xl font-black text-[#006B47] leading-tight tracking-tight">Bordo</p>
               </div>
             </div>
 
