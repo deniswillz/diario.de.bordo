@@ -14,7 +14,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
   const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'operador' as UserRole });
   const [myPassword, setMyPassword] = useState({ current: '', confirm: '' });
   const [actionLoading, setActionLoading] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'alert' | 'error' } | null>(null);
+  const [backups, setBackups] = useState<any[]>([]);
+  const [showBackups, setShowBackups] = useState(false);
 
   const currentUser = (() => {
     try {
@@ -24,10 +26,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
 
   const isAdmin = currentUser.role === 'admin';
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'alert' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  const fetchBackups = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const data = await db.system.fetchBackups();
+      setBackups(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [isAdmin]);
 
   const fetchUsers = useCallback(async () => {
     if (!isAdmin) return;
@@ -41,7 +53,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchBackups();
+  }, [fetchUsers, fetchBackups]);
 
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +65,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
     setActionLoading(true);
     try {
       if (editingUserId) {
-        await db.users.update(editingUserId, { 
-          name: userForm.name.trim(), 
-          username: userForm.username.toLowerCase().trim(), 
-          role: userForm.role 
+        await db.users.update(editingUserId, {
+          name: userForm.name.trim(),
+          username: userForm.username.toLowerCase().trim(),
+          role: userForm.role
         });
         showToast("Acesso Nano atualizado com sucesso.");
       } else {
@@ -109,11 +122,66 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
       showToast("Erro ao remover", "error");
     }
   };
+  const handleRestore = async (backup: any) => {
+    if (!confirm(`Deseja restaurar o sistema para o estado de ${new Date(backup.created_at).toLocaleString()}? Isso substituirá todos os dados atuais.`)) return;
+    setActionLoading(true);
+    try {
+      await db.system.restoreFromSnapshot(backup.data_snapshot);
+      showToast("Sistema restaurado com sucesso!");
+      onRefresh();
+      setShowBackups(false);
+    } catch (e: any) {
+      showToast("Falha na restauração: " + e.message, "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleExportJSON = () => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `nano-pro-backup-${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+      showToast("Dados exportados com sucesso.");
+    } catch (e) {
+      showToast("Erro ao exportar dados", "error");
+    }
+  };
+
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (confirm("Importar dados do arquivo JSON? Isso substituirá todos os dados atuais no Supabase.")) {
+          setActionLoading(true);
+          await db.system.restoreFromSnapshot(json);
+          showToast("Dados importados com sucesso!");
+          onRefresh();
+        }
+      } catch (err) {
+        showToast("Arquivo JSON inválido", "error");
+      } finally {
+        setActionLoading(false);
+        e.target.value = ''; // Reset input
+      }
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div className="space-y-10 pb-24">
       {toast && (
-        <div className={`fixed top-24 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl border-2 font-black text-[10px] uppercase tracking-widest animate-slideInRight ${toast.type === 'success' ? 'bg-emerald-900 text-white border-emerald-600' : 'bg-red-900 text-white border-red-600'}`}>
+        <div className={`fixed top-24 right-10 z-[300] px-8 py-4 rounded-2xl shadow-2xl border-2 font-black text-[10px] uppercase tracking-widest animate-slideInRight 
+          ${toast.type === 'success' ? 'bg-emerald-900 text-white border-emerald-600' :
+            toast.type === 'alert' ? 'bg-amber-600 text-white border-amber-400' : 'bg-red-900 text-white border-red-600'}`}>
           {toast.message}
         </div>
       )}
@@ -130,11 +198,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
           <div className="md:col-span-4">
             <label className="block text-[8px] font-black text-gray-400 uppercase mb-2 tracking-widest ml-1">Nova Senha</label>
-            <input type="password" value={myPassword.current} onChange={e => setMyPassword({...myPassword, current: e.target.value})} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" placeholder="••••••••" />
+            <input type="password" value={myPassword.current} onChange={e => setMyPassword({ ...myPassword, current: e.target.value })} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" placeholder="••••••••" />
           </div>
           <div className="md:col-span-4">
             <label className="block text-[8px] font-black text-gray-400 uppercase mb-2 tracking-widest ml-1">Confirmar Senha</label>
-            <input type="password" value={myPassword.confirm} onChange={e => setMyPassword({...myPassword, confirm: e.target.value})} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" placeholder="••••••••" />
+            <input type="password" value={myPassword.confirm} onChange={e => setMyPassword({ ...myPassword, confirm: e.target.value })} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" placeholder="••••••••" />
           </div>
           <div className="md:col-span-4">
             <button onClick={handleUpdateMyPassword} disabled={actionLoading} className="w-full py-5 bg-[#005c3e] text-white font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-lg hover:bg-emerald-900 transition-all border-b-6 border-emerald-950 active:translate-y-1">
@@ -161,12 +229,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
               <div className="xl:col-span-5 bg-gray-50/50 p-8 rounded-[2rem] border-2 border-gray-100 shadow-inner">
                 <h3 className="text-[10px] font-black text-gray-400 uppercase mb-8 tracking-[0.3em] text-center">{editingUserId ? 'Atualizar Acesso' : 'Cadastrar Novo Acesso'}</h3>
                 <form onSubmit={handleSaveUser} className="space-y-5">
-                  <input type="text" placeholder="Nome do Usuário" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" />
-                  <input type="text" placeholder="Identificador (Login)" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" />
+                  <input type="text" placeholder="Nome do Usuário" value={userForm.name} onChange={e => setUserForm({ ...userForm, name: e.target.value })} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" />
+                  <input type="text" placeholder="Identificador (Login)" value={userForm.username} onChange={e => setUserForm({ ...userForm, username: e.target.value })} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" />
                   {!editingUserId && (
-                    <input type="password" placeholder="Senha Inicial" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" />
+                    <input type="password" placeholder="Senha Inicial" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold" />
                   )}
-                  <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value as UserRole})} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold uppercase text-[10px] tracking-widest">
+                  <select value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value as UserRole })} className="w-full px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-emerald-600 font-bold uppercase text-[10px] tracking-widest">
                     <option value="operador">Nível Operador</option>
                     <option value="editor">Nível Editor</option>
                     <option value="admin">Nível Administrador</option>
@@ -175,7 +243,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
                     {editingUserId ? 'Salvar Alterações' : 'Liberar Acesso Nano'}
                   </button>
                   {editingUserId && (
-                    <button type="button" onClick={() => { setEditingUserId(null); setUserForm({name: '', username: '', password: '', role: 'operador'}); }} className="w-full py-4 text-gray-400 font-black text-[9px] uppercase">Cancelar Edição</button>
+                    <button type="button" onClick={() => { setEditingUserId(null); setUserForm({ name: '', username: '', password: '', role: 'operador' }); }} className="w-full py-4 text-gray-400 font-black text-[9px] uppercase">Cancelar Edição</button>
                   )}
                 </form>
               </div>
@@ -225,17 +293,84 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentData, onRefresh }
                 <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-10">Gera um ponto de restauração manual agora na rede Nano.</p>
                 <button onClick={async () => {
                   setActionLoading(true);
-                  try { await db.system.createBackup(currentData, 'manual'); showToast("Backup realizado."); } catch { showToast("Erro", "error"); }
+                  try {
+                    await db.system.createBackup(currentData, 'manual');
+                    showToast("Backup realizado.");
+                    fetchBackups();
+                  } catch { showToast("Erro", "error"); }
                   finally { setActionLoading(false); }
                 }} className="w-full py-5 bg-[#005c3e] text-white font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-xl border-b-6 border-emerald-950 active:translate-y-1">Novo Backup Cloud</button>
               </div>
               <div className="p-12 bg-gray-50/50 rounded-[2.5rem] text-center flex flex-col items-center">
                 <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-lg mb-8">
-                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
                 <h3 className="text-lg font-black text-gray-900 uppercase italic mb-4">Time Travel</h3>
-                <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-10">Retorne o banco Nano a um estado anterior via snapshot.</p>
-                <button className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-xl border-b-6 border-blue-900 active:translate-y-1">Ver Histórico Nano</button>
+                <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-10">
+                  {showBackups ? 'Selecione um ponto para restauração' : 'Retorne o banco Nano a um estado anterior via snapshot.'}
+                </p>
+
+                {showBackups ? (
+                  <div className="w-full space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {backups.length === 0 ? (
+                      <div className="py-4 text-[8px] font-bold text-gray-400">NENHUM BACKUP ENCONTRADO</div>
+                    ) : (
+                      backups.map(b => (
+                        <div key={b.id} className="flex flex-col gap-2 p-4 bg-white rounded-xl border-2 border-gray-100 hover:border-blue-200 transition-colors">
+                          <div className="flex justify-between items-center text-[8px] font-black uppercase">
+                            <span className="text-gray-400">{new Date(b.created_at).toLocaleString('pt-BR')}</span>
+                            <span className={b.tipo === 'manual' ? 'text-blue-600' : 'text-amber-500'}>{b.tipo}</span>
+                          </div>
+                          <button
+                            onClick={() => handleRestore(b)}
+                            disabled={actionLoading}
+                            className="w-full py-2 bg-blue-50 text-blue-700 text-[8px] font-black uppercase rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                          >
+                            Restaurar este Ponto
+                          </button>
+                        </div>
+                      ))
+                    )}
+                    <button onClick={() => setShowBackups(false)} className="w-full py-2 text-[8px] font-black text-gray-400 uppercase hover:text-gray-600 mt-2 italic underline">Fechar Histórico</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowBackups(true)}
+                    className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-xl border-b-6 border-blue-900 active:translate-y-1"
+                  >
+                    Ver Histórico Nano
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* GESTÃO DE ARQUIVOS JSON */}
+            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="p-8 bg-emerald-50/50 rounded-[2rem] border-2 border-emerald-100/50 flex items-center justify-between">
+                <div>
+                  <h4 className="text-[10px] font-black text-emerald-900 uppercase tracking-widest">Exportar para Excel/JSON</h4>
+                  <p className="text-[8px] font-bold text-emerald-600 uppercase mt-1">Baixar cópia local dos dados atuais</p>
+                </div>
+                <button onClick={handleExportJSON} className="px-6 py-3 bg-white text-emerald-700 font-bold text-[9px] uppercase tracking-widest rounded-xl border-2 border-emerald-200 hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                  Exportar Agora
+                </button>
+              </div>
+              <div className="p-8 bg-amber-50/50 rounded-[2rem] border-2 border-amber-100/50 flex items-center justify-between">
+                <div>
+                  <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">Importar de Arquivo</h4>
+                  <p className="text-[8px] font-bold text-amber-600 uppercase mt-1">Substituir dados via JSON</p>
+                </div>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportJSON}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <button className="px-6 py-3 bg-white text-amber-700 font-bold text-[9px] uppercase tracking-widest rounded-xl border-2 border-amber-200 hover:bg-amber-600 hover:text-white transition-all shadow-sm pointer-events-none">
+                    Importar JSON
+                  </button>
+                </div>
               </div>
             </div>
           </section>
