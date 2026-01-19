@@ -145,13 +145,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
         <aside className={`fixed inset-y-0 left-0 z-[60] w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col h-full">
             {/* Sidebar Header - Diário de Bordo */}
-            <div className="p-5 border-b border-gray-100 flex items-center justify-center bg-gray-50">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 px-6 py-5 w-full">
-                <div className="text-center">
-                  <p className="text-2xl font-black text-[#006B47] leading-tight tracking-tight">Diário</p>
-                  <p className="text-2xl font-black text-[#006B47] leading-tight tracking-tight">de</p>
-                  <p className="text-2xl font-black text-[#006B47] leading-tight tracking-tight">Bordo</p>
-                </div>
+            <div className="p-4">
+              <div className="flex flex-col items-center text-center bg-gradient-to-br from-[#006B47] to-[#004d33] text-white text-base font-bold tracking-[3px] leading-[1.4] py-5 px-4 rounded-2xl shadow-[0_4px_15px_rgba(0,107,71,0.3)]">
+                <span>DIÁRIO</span>
+                <span>DE</span>
+                <span>BORDO</span>
               </div>
             </div>
 

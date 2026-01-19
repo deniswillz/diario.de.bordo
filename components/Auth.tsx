@@ -43,13 +43,13 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
 
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md">
         {/* Logo Section */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           {/* Logo PNG */}
-          <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="inline-flex items-center justify-center mb-6">
             <img
-              src="/nano-logo.png"
+              src="/logo.png"
               alt="Nano Pro"
-              className="h-20 sm:h-24 object-contain filter brightness-0 invert"
+              className="h-32 w-auto"
             />
           </div>
 
@@ -59,74 +59,72 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
           </p>
         </div>
 
-        {/* Login Card */}
-        <div className="w-full bg-white rounded-3xl shadow-2xl p-8 sm:p-10">
-          <form onSubmit={handleLogin} className="space-y-6">
-            {error && (
-              <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold text-center border border-red-100">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-5">
-              {/* Login Field */}
-              <div>
-                <div className="flex items-center gap-2 mb-2 text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <label className="text-[10px] font-bold uppercase tracking-widest">Login</label>
-                </div>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  className="w-full px-4 py-4 bg-[#f5f5f5] border-2 border-transparent rounded-xl outline-none focus:border-[#006B47] transition-all text-gray-700 font-medium"
-                  placeholder="Seu login"
-                  required
-                />
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <div className="flex items-center gap-2 mb-2 text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <label className="text-[10px] font-bold uppercase tracking-widest">Senha</label>
-                </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full px-4 py-4 bg-[#f5f5f5] border-2 border-transparent rounded-xl outline-none focus:border-[#006B47] transition-all text-gray-700 font-medium"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 space-y-5">
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-xs font-semibold text-center border border-red-100">
+              {error}
             </div>
+          )}
 
-            {/* Submit Button */}
+          {/* Login Field */}
+          <div>
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Login
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              className="w-full bg-slate-100 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47]"
+              placeholder="Seu login"
+              required
+            />
+          </div>
+
+          {/* Password Field */}
+          <div>
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Senha
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full bg-slate-100 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47]"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#006B47] text-white py-4 rounded-lg font-black text-sm uppercase tracking-widest hover:bg-[#005538] transition-all active:scale-[0.98] disabled:opacity-70"
+          >
+            {loading ? 'Sincronizando...' : 'Entrar'}
+          </button>
+
+          {/* Guest Mode */}
+          <p className="text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest pt-2">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#006B47] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-[#005538] transition-all uppercase text-sm tracking-widest disabled:opacity-70"
+              type="button"
+              onClick={onGuest}
+              className="hover:text-[#006B47] transition-all"
             >
-              {loading ? 'Sincronizando...' : 'Entrar'}
+              Modo Consulta (Visitante)
             </button>
-
-            {/* Guest Mode */}
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={onGuest}
-                className="text-gray-400 hover:text-[#006B47] text-[10px] font-bold uppercase tracking-widest transition-all"
-              >
-                Modo Consulta (Visitante)
-              </button>
-            </div>
-          </form>
-        </div>
+          </p>
+        </form>
       </div>
 
       {/* Footer */}
