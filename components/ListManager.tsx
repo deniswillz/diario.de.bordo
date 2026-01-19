@@ -14,8 +14,8 @@ interface ListManagerProps<T> {
   onRefresh: () => void;
 }
 
-export const ListManager = <T extends { id: string, data: string, numero?: string, status?: string, texto?: string, observacao?: string, fornecedor?: string, documento?: string, conferente?: string }>({ 
-  title, items, role, type, onSave, onDelete, onRefresh 
+export const ListManager = <T extends { id: string, data: string, numero?: string, status?: string, texto?: string, observacao?: string, fornecedor?: string, documento?: string, conferente?: string }>({
+  title, items, role, type, onSave, onDelete, onRefresh
 }: ListManagerProps<T>) => {
   const [editing, setEditing] = useState<Partial<T> | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -28,7 +28,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
   const canEdit = role === 'admin' || role === 'editor';
 
   const openNewForm = () => {
-    setEditing({ 
+    setEditing({
       data: format(new Date(), 'yyyy-MM-dd'),
       status: type === 'nota' ? 'Pendente' : 'Em Separação'
     } as any);
@@ -45,7 +45,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!editing) return;
-    
+
     if (type === 'nota' && (!editing.numero || !editing.fornecedor)) {
       setErrorMessage("Número da Nota e Fornecedor são obrigatórios.");
       return;
@@ -96,7 +96,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      const matchesSearch = 
+      const matchesSearch =
         (item.numero?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.texto?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.fornecedor?.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -105,7 +105,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
         (item.data.includes(searchTerm));
 
       if (dayFilter === 'all') return matchesSearch;
-      
+
       const itemDate = parseISO(item.data);
       const cutoff = subDays(new Date(), parseInt(dayFilter));
       return matchesSearch && isAfter(itemDate, cutoff);
@@ -135,7 +135,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
 
               <div className="p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8">
                 {errorMessage && <div className="p-5 bg-red-50 text-red-600 rounded-2xl border-2 border-red-200 font-black text-[10px] uppercase tracking-widest">{errorMessage}</div>}
-                
+
                 {/* FORMULÁRIO: NOTA FISCAL */}
                 {type === 'nota' && (
                   <div className="space-y-8">
@@ -155,10 +155,21 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Fornecedor</label>
                       <input type="text" placeholder="Nome completo do fornecedor" value={editing?.fornecedor || ''} onChange={e => setEditing({ ...editing, fornecedor: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
                     </div>
-                    {/* Linha 3: Conferente (Full Width) */}
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Conferente</label>
-                      <input type="text" placeholder="Nome do conferente responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                    {/* Linha 3: Conferente e Status (Compacto) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Conferente</label>
+                        <input type="text" placeholder="Nome do conferente responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Status</label>
+                        <select value={editing?.status || 'Pendente'} onChange={e => setEditing({ ...editing, status: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner">
+                          <option value="Pendente">Pendente</option>
+                          <option value="Em Conferência">Em Conferência</option>
+                          <option value="Pré Nota">Pré Nota</option>
+                          <option value="Classificada">Classificada</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -182,10 +193,19 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Ordem</label>
                       <input type="text" placeholder="Número da OP (Ordem de Produção)" value={editing?.numero || ''} onChange={e => setEditing({ ...editing, numero: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
                     </div>
-                    {/* Linha 3: Responsável (Full Width) */}
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Responsável</label>
-                      <input type="text" placeholder="Nome do colaborador responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                    {/* Linha 3: Responsável e Status (Compacto) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Responsável</label>
+                        <input type="text" placeholder="Nome do colaborador responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Status</label>
+                        <select value={editing?.status || 'Em Separação'} onChange={e => setEditing({ ...editing, status: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner">
+                          <option value="Em Separação">Em Separação</option>
+                          <option value="Concluída">Concluída</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -228,18 +248,18 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
             <div className="h-10 w-2.5 bg-[#005c3e] rounded-full"></div>
             <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{title}</h3>
           </div>
-          
+
           <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto">
             <div className="flex items-center gap-2 bg-white border-4 border-gray-200 p-2 rounded-2xl shadow-inner">
-               {['all', '1', '7', '30'].map(val => (
-                 <button 
-                  key={val} 
+              {['all', '1', '7', '30'].map(val => (
+                <button
+                  key={val}
                   onClick={() => setDayFilter(val as any)}
                   className={`px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${dayFilter === val ? 'bg-[#005c3e] text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}
-                 >
-                   {val === 'all' ? 'Todos' : val === '1' ? 'Hoje' : `${val} Dias`}
-                 </button>
-               ))}
+                >
+                  {val === 'all' ? 'Todos' : val === '1' ? 'Hoje' : `${val} Dias`}
+                </button>
+              ))}
             </div>
 
             <div className="relative w-full xl:w-80">
