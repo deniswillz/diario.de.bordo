@@ -146,9 +146,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
           <div className="flex flex-col h-full">
             {/* Sidebar Header - Diário de Bordo */}
             <div className="p-4">
-              <div className="flex flex-col items-center text-center bg-gradient-to-br from-[#006B47] to-[#004d33] text-white text-base font-bold tracking-[3px] leading-[1.4] py-5 px-4 rounded-2xl shadow-[0_4px_15px_rgba(0,107,71,0.3)]">
-                <span>DIÁRIO</span>
-                <span>DE</span>
+              <div className="flex flex-col items-center text-center bg-gradient-to-br from-[#006B47] to-[#004d33] text-white text-lg font-bold tracking-[3px] leading-[1.4] py-5 px-4 rounded-2xl shadow-[0_4px_15px_rgba(0,107,71,0.3)]">
+                <span>DIÁRIO DE</span>
                 <span>BORDO</span>
               </div>
             </div>
