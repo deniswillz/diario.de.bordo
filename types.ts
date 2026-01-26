@@ -16,8 +16,7 @@ export interface NotaFiscal {
   numero: string;
   fornecedor: string;
   conferente: string;
-  status: 'Pendente' | 'Em Conferência' | 'Pré Nota' | 'Classificada';
-  tipo: 'Entrada' | 'Saída' | 'Devolução' | '';
+  tipo: 'Nacional' | 'Importado' | 'Retorno' | 'Devolução' | '';
   observacao: string;
   created_by?: string;
 }
@@ -29,6 +28,7 @@ export interface OrdemProducao {
   documento: string;
   conferente: string;
   status: 'Em Separação' | 'Concluída';
+  tipo: 'Chicote' | 'Mecânica' | 'Eletrônica' | 'Engenharia' | 'P&D' | '';
   observacao: string;
   created_by?: string;
 }
