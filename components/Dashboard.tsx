@@ -128,8 +128,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
               >
                 <span className="text-2xl font-black italic">{format(date, 'd')}</span>
                 <div className="flex flex-col gap-1.5 mt-4">
-                  {notas.length > 0 && <div className="flex justify-between items-center bg-white/95 px-2.5 py-1.5 rounded-lg text-[8px] font-black border border-blue-100 uppercase"><span>NF</span><span>{notas.length}</span></div>}
-                  {comentarios.length > 0 && <div className="flex justify-between items-center bg-white/95 px-2.5 py-1.5 rounded-lg text-[8px] font-black border border-purple-100 uppercase"><span>💬</span><span>{comentarios.length}</span></div>}
+                  {notas.length > 0 && <div className="flex justify-between items-center bg-white/95 dark:bg-gray-700/90 px-2.5 py-1.5 rounded-lg text-[8px] font-black border border-blue-100 dark:border-blue-900/50 uppercase dark:text-blue-100 transition-colors"><span>NF</span><span>{notas.length}</span></div>}
+                  {comentarios.length > 0 && <div className="flex justify-between items-center bg-white/95 dark:bg-gray-700/90 px-2.5 py-1.5 rounded-lg text-[8px] font-black border border-purple-100 dark:border-purple-900/50 uppercase dark:text-purple-100 transition-colors"><span>💬</span><span>{comentarios.length}</span></div>}
                 </div>
               </div>
             );
