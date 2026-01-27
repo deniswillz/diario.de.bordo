@@ -60,16 +60,16 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 space-y-5">
+        <form onSubmit={handleLogin} className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 space-y-5 border border-white/10 dark:border-gray-700">
           {error && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-xs font-semibold text-center border border-red-100">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-semibold text-center border border-red-100 dark:border-red-900/50">
               {error}
             </div>
           )}
 
           {/* Login Field */}
           <div>
-            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
@@ -80,7 +80,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className="w-full bg-slate-100 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47]"
+              className="w-full bg-slate-100 dark:bg-gray-700/50 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47] text-gray-900 dark:text-gray-100"
               placeholder="Seu login"
               required
             />
@@ -88,7 +88,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
 
           {/* Password Field */}
           <div>
-            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -99,7 +99,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-slate-100 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47]"
+              className="w-full bg-slate-100 dark:bg-gray-700/50 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47] text-gray-900 dark:text-gray-100"
               placeholder="••••••••"
               required
             />
@@ -109,17 +109,17 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#006B47] text-white py-4 rounded-lg font-black text-sm uppercase tracking-widest hover:bg-[#005538] transition-all active:scale-[0.98] disabled:opacity-70"
+            className="w-full bg-[#006B47] dark:bg-emerald-600 text-white py-4 rounded-lg font-black text-sm uppercase tracking-widest hover:bg-[#005538] dark:hover:bg-emerald-700 transition-all active:scale-[0.98] disabled:opacity-70"
           >
             {loading ? 'Sincronizando...' : 'Entrar'}
           </button>
 
           {/* Guest Mode */}
-          <p className="text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest pt-2">
+          <p className="text-center text-slate-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-widest pt-2">
             <button
               type="button"
               onClick={onGuest}
-              className="hover:text-[#006B47] transition-all"
+              className="hover:text-[#006B47] dark:hover:text-emerald-400 transition-all"
             >
               Modo Consulta (Visitante)
             </button>

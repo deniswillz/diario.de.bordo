@@ -135,27 +135,61 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
   }, [items, type]);
 
   return (
-    <div className="pb-24 relative animate-fadeIn">
-      {canEdit && (
-        <button onClick={openNewForm} className="fixed bottom-10 right-10 z-[150] w-16 h-16 bg-[#005c3e] text-white rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all flex items-center justify-center border-4 border-emerald-950">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
-        </button>
-      )}
+    <div className="space-y-8 animate-fadeIn">
+      {/* Header com Filtros e Busca */}
+      <div className="bg-white dark:bg-gray-800 p-8 sm:p-10 rounded-[2.5rem] shadow-xl border-4 border-gray-300 dark:border-gray-700 flex flex-col gap-10">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+          <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter uppercase italic border-l-[12px] border-emerald-600 dark:border-emerald-500 pl-8">{title}</h2>
+          {canEdit && (
+            <button onClick={openNewForm} className="w-full sm:w-auto px-10 py-5 bg-[#005c3e] dark:bg-emerald-600 text-white font-black rounded-2xl shadow-xl hover:bg-emerald-900 dark:hover:bg-emerald-700 transition-all text-xs tracking-[0.2em] uppercase border-b-6 border-emerald-950 dark:border-emerald-900 active:translate-y-1">
+              {type === 'nota' ? '+ Nova Nota Fiscal' : '+ Novo Apontamento'}
+            </button>
+          )}
+        </div>
 
-      {isFormOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-gray-400 max-h-[90vh] flex flex-col animate-scaleIn">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-8 relative group">
+            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-emerald-500 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+            <input
+              type="text"
+              placeholder={`Pesquisar por ${type === 'nota' ? 'número ou fornecedor...' : 'conteúdo ou responsável...'}`}
+              className="w-full pl-16 pr-10 py-5 bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-emerald-500 focus:bg-white dark:focus:bg-gray-700 transition-all shadow-inner"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="lg:col-span-4 flex bg-gray-50 dark:bg-gray-700/50 p-1.5 rounded-2xl border-2 border-gray-100 dark:border-gray-700 shadow-inner">
+            {(['all', '1', '7', '30'] as const).map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setDayFilter(filter)}
+                className={`flex-1 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${dayFilter === filter
+                  ? 'bg-white dark:bg-gray-600 text-emerald-700 dark:text-emerald-400 shadow-md border border-gray-100 dark:border-gray-500'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                  }`}
+              >
+                {filter === 'all' ? 'Tudo' : filter === '1' ? 'Hoje' : `${filter}d`}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {isFormOpen && editing && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-emerald-950/80 dark:bg-black/80 backdrop-blur-xl">
+          <div className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden border-4 border-emerald-500/30 flex flex-col h-[85vh] animate-scaleIn">
             <form onSubmit={handleSave} className="flex flex-col h-full">
-              <div className="p-10 bg-gray-50 border-b-4 border-gray-200 flex justify-between items-center">
-                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic border-l-[10px] border-emerald-600 pl-6">
-                  {editing?.id ? 'Editar' : 'Nova'} {type === 'nota' ? 'Nota Fiscal' : title}
-                </h3>
-                <button type="button" onClick={() => setIsFormOpen(false)} className="p-3 hover:bg-gray-200 rounded-full transition-all text-gray-400">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+              <div className="p-10 bg-[#005c3e] dark:bg-emerald-700 text-white flex justify-between items-center shrink-0">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] mb-1 opacity-70">Nano System Process</p>
+                  <h3 className="text-3xl font-black italic tracking-tighter uppercase">{editing.id ? 'Editar Registro' : type === 'nota' ? 'Nova Nota Fiscal' : 'Novo Apontamento'}</h3>
+                </div>
+                <button type="button" onClick={() => setIsFormOpen(false)} className="w-14 h-14 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center justify-center transition-all border-2 border-white/20"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>
               </div>
 
-              <div className="p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8 max-h-[60vh]">
+              <div className="p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8 max-h-[60vh] bg-white dark:bg-gray-900">
                 {errorMessage && <div className="p-5 bg-red-50 text-red-600 rounded-2xl border-2 border-red-200 font-black text-[10px] uppercase tracking-widest">{errorMessage}</div>}
 
                 {/* FORMULÁRIO: NOTA FISCAL */}
@@ -164,24 +198,36 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                     {/* Linha 1: Data e Nota (Compacto) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Data</label>
-                        <input type="date" value={editing?.data || ''} onChange={e => setEditing({ ...editing, data: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all" required />
+                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Data</label>
+                        <input
+                          type="date"
+                          className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all"
+                          value={editing.data}
+                          onChange={(e) => setEditing({ ...editing, data: e.target.value })}
+                        />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Número da Nota</label>
-                        <input type="text" placeholder="Ex: NF-12345" value={editing?.numero || ''} onChange={e => setEditing({ ...editing, numero: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all italic shadow-inner" required />
+                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Número da Nota</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: NF-12345"
+                          value={editing?.numero || ''}
+                          onChange={e => setEditing({ ...editing, numero: e.target.value } as any)}
+                          className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner"
+                          required
+                        />
                       </div>
                     </div>
                     {/* Linha 2: Fornecedor (Full Width) */}
                     <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Fornecedor</label>
+                      <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Fornecedor</label>
                       <input
                         type="text"
                         placeholder="Nome completo do fornecedor"
                         list="suppliers-list"
                         value={editing?.fornecedor || ''}
                         onChange={e => setEditing({ ...editing, fornecedor: e.target.value } as any)}
-                        className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner"
+                        className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner"
                         required
                       />
                       <datalist id="suppliers-list">
@@ -191,12 +237,12 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                     {/* Linha 3: Conferente e Status (Compacto) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Conferente</label>
-                        <input type="text" placeholder="Nome do conferente responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner" required />
+                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Conferente</label>
+                        <input type="text" placeholder="Nome do conferente responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner" required />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Status</label>
-                        <select value={editing?.status || 'Pendente'} onChange={e => setEditing({ ...editing, status: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner">
+                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Status</label>
+                        <select value={editing?.status || 'Pendente'} onChange={e => setEditing({ ...editing, status: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner">
                           <option value="Pendente">Pendente</option>
                           <option value="Em Conferência">Em Conferência</option>
                           <option value="Pré Nota">Pré Nota</option>
@@ -204,8 +250,8 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Tipo</label>
-                        <select value={editing?.tipo || ''} onChange={e => setEditing({ ...editing, tipo: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none font-bold focus:border-[#005c3e] transition-all shadow-inner">
+                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Tipo</label>
+                        <select value={editing?.tipo || ''} onChange={e => setEditing({ ...editing, tipo: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner">
                           <option value="">Selecione...</option>
                           <option value="Nacional">Nacional</option>
                           <option value="Importado">Importado</option>
@@ -220,14 +266,14 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
 
                 {/* CAMPO COMENTÁRIO COMUM */}
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Comentário</label>
-                  <textarea value={type === 'comentario' ? (editing?.texto || '') : (editing?.observacao || '')} onChange={e => setEditing({ ...editing, [type === 'comentario' ? 'texto' : 'observacao']: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-300 rounded-2xl outline-none min-h-[120px] font-medium resize-none focus:border-[#005c3e] transition-all shadow-inner" required />
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Comentário</label>
+                  <textarea value={type === 'comentario' ? (editing?.texto || '') : (editing?.observacao || '')} onChange={e => setEditing({ ...editing, [type === 'comentario' ? 'texto' : 'observacao']: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 outline-none min-h-[120px] resize-none focus:border-emerald-500 transition-all shadow-inner" required />
                 </div>
               </div>
 
-              <div className="p-10 border-t-4 border-gray-100 bg-gray-50 flex gap-6">
-                <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 py-5 text-gray-400 font-black text-[10px] uppercase tracking-widest bg-white border-2 border-gray-200 rounded-2xl hover:bg-gray-100 transition-all">Cancelar</button>
-                <button type="submit" disabled={loading} className="flex-[2] py-5 bg-[#005c3e] text-white font-black text-[10px] uppercase rounded-2xl shadow-xl tracking-widest border-b-6 border-emerald-950 active:translate-y-1 transition-all">Sincronizar Dados Nano</button>
+              <div className="p-10 border-t-4 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex gap-6 shrink-0">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 py-5 text-gray-400 dark:text-gray-300 font-black text-[10px] uppercase tracking-widest bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">Cancelar</button>
+                <button type="submit" disabled={loading} className="flex-[2] py-5 bg-[#005c3e] dark:bg-emerald-600 text-white font-black text-[10px] uppercase rounded-2xl shadow-xl tracking-widest border-b-6 border-emerald-950 dark:border-emerald-900 active:translate-y-1 transition-all">Sincronizar Dados Nano</button>
               </div>
             </form>
           </div>
@@ -236,14 +282,14 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
 
       {deleteConfirm && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-red-500 animate-scaleIn">
-            <div className="p-12 text-center bg-red-50">
-              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6 border-2 border-red-200 text-3xl">!</div>
-              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic leading-none mb-4">Remover Registro?</h3>
-              <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">Ação irreversível no sistema Nano</p>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-red-500 animate-scaleIn">
+            <div className="p-12 text-center bg-red-50 dark:bg-red-900/20">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6 border-2 border-red-200 dark:border-red-800 text-3xl">!</div>
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic leading-none mb-4">Remover Registro?</h3>
+              <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest">Ação irreversível no sistema Nano</p>
             </div>
-            <div className="p-8 flex gap-4 bg-white border-t-4 border-gray-100">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-4 bg-gray-100 font-black rounded-2xl text-[10px] uppercase tracking-widest text-gray-400 border-2 border-gray-200">Cancelar</button>
+            <div className="p-8 flex gap-4 bg-white dark:bg-gray-800 border-t-4 border-gray-100 dark:border-gray-700">
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-700 font-black rounded-2xl text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600">Cancelar</button>
               <button onClick={confirmDeleteAction} className="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Confirmar Exclusão</button>
             </div>
           </div>
@@ -252,81 +298,56 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
 
       {duplicateWarning && (
         <div className="fixed inset-0 z-[350] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-amber-500 animate-scaleIn">
-            <div className="p-12 text-center bg-amber-50">
-              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-6 border-2 border-amber-200 text-3xl">?</div>
-              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic leading-none mb-4">Número Duplicado!</h3>
-              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">O número {duplicateWarning.numero || duplicateWarning.documento} já existe no sistema Nano. Deseja continuar?</p>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-amber-500 animate-scaleIn">
+            <div className="p-12 text-center bg-amber-50 dark:bg-amber-900/20">
+              <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-6 border-2 border-amber-200 dark:border-amber-800 text-3xl">?</div>
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic leading-none mb-4">Número Duplicado!</h3>
+              <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">O número {duplicateWarning.numero || duplicateWarning.documento} já existe no sistema Nano. Deseja continuar?</p>
             </div>
-            <div className="p-8 flex gap-4 bg-white border-t-4 border-gray-100">
-              <button onClick={() => setDuplicateWarning(null)} className="flex-1 py-4 bg-gray-100 font-black rounded-2xl text-[10px] uppercase tracking-widest text-gray-400 border-2 border-gray-200">Corrigir</button>
+            <div className="p-8 flex gap-4 bg-white dark:bg-gray-800 border-t-4 border-gray-100 dark:border-gray-700">
+              <button onClick={() => setDuplicateWarning(null)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-700 font-black rounded-2xl text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600">Corrigir</button>
               <button onClick={confirmDuplicateSave} className="flex-1 py-4 bg-amber-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Sim, Continuar</button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-[2.5rem] shadow-xl border-4 border-gray-300 overflow-hidden">
-        <div className="p-10 border-b-4 border-gray-200 bg-gray-50/20 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8">
-          <div className="flex items-center gap-6">
-            <div className="h-10 w-2.5 bg-[#005c3e] rounded-full"></div>
-            <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{title}</h3>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto">
-            <div className="flex items-center gap-2 bg-white border-4 border-gray-200 p-2 rounded-2xl shadow-inner">
-              {['all', '1', '7', '30'].map(val => (
-                <button
-                  key={val}
-                  onClick={() => setDayFilter(val as any)}
-                  className={`px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${dayFilter === val ? 'bg-[#005c3e] text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}
-                >
-                  {val === 'all' ? 'Todos' : val === '1' ? 'Hoje' : `${val} Dias`}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative w-full xl:w-80">
-              <input type="text" placeholder="Filtrar..." className="w-full bg-white border-4 border-gray-200 outline-none p-4 pl-12 text-sm font-black rounded-2xl focus:border-emerald-600 transition-all shadow-inner" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
+      {/* Tabela de Registros */}
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-xl border-4 border-gray-300 dark:border-gray-700 overflow-hidden relative">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-white text-gray-400 text-[9px] font-black uppercase tracking-[0.3em] border-b-2 border-gray-100">
+              <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] border-b-4 border-gray-100 dark:border-gray-700">
                 <th className="px-10 py-8">Cronologia</th>
                 {type !== 'comentario' && <th className="px-10 py-8">Identificação Nano</th>}
                 <th className="px-10 py-8">Status / Detalhamento</th>
                 {canEdit && <th className="px-10 py-8 text-right">Ações</th>}
               </tr>
             </thead>
-            <tbody className="divide-y-2 divide-gray-50">
+            <tbody className="divide-y-2 divide-gray-50 dark:divide-gray-700">
               {filteredItems.map(item => (
-                <tr key={item.id} className="hover:bg-emerald-50/20 group transition-all">
-                  <td className="px-10 py-10 font-black text-gray-800 text-sm italic">{format(parseISO(item.data), 'dd/MM/yyyy')}</td>
+                <tr key={item.id} className="hover:bg-emerald-50/20 dark:hover:bg-emerald-900/10 group transition-all">
+                  <td className="px-10 py-10 font-black text-gray-800 dark:text-gray-300 text-sm italic">{format(parseISO(item.data), 'dd/MM/yyyy')}</td>
                   {type !== 'comentario' && (
                     <td className="px-10 py-10">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">{item.conferente || item.fornecedor}</p>
-                        {item.tipo && <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[7px] font-bold uppercase tracking-wider border border-gray-200">{item.tipo}</span>}
+                      <p className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tighter leading-none italic mb-2">#{item.numero || item.documento}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">{item.conferente || item.fornecedor}</p>
+                        {item.tipo && <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded text-[7px] font-bold uppercase tracking-wider border border-gray-200 dark:border-gray-700">{item.tipo}</span>}
                       </div>
-                      <p className="text-2xl font-black text-gray-900 tracking-tighter leading-none italic">#{item.numero || item.documento}</p>
                     </td>
                   )}
                   <td className="px-10 py-10">
                     <div className="flex flex-col gap-4 items-start">
                       {type !== 'comentario' && <span className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${getStatusColor(item.status)}`}>{item.status}</span>}
-                      <p className="text-[11px] text-gray-600 italic font-medium leading-relaxed max-w-xl">"{item.texto || item.observacao}"</p>
+                      <p className="text-[11px] text-gray-600 dark:text-gray-400 italic font-medium leading-relaxed max-w-xl">"{item.texto || item.observacao}"</p>
                     </div>
                   </td>
                   {canEdit && (
                     <td className="px-10 py-10 text-right">
                       <div className="flex items-center justify-end gap-4 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                        <button onClick={() => handleEdit(item)} className="p-3.5 text-emerald-800 hover:bg-emerald-700 hover:text-white rounded-xl border-2 border-gray-200 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                        <button onClick={() => setDeleteConfirm({ id: item.id })} className="p-3.5 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border-2 border-gray-200 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        <button onClick={() => handleEdit(item)} className="p-3.5 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-700 dark:hover:bg-emerald-600 hover:text-white rounded-xl border-2 border-gray-200 dark:border-gray-700 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                        <button onClick={() => setDeleteConfirm({ id: item.id })} className="p-3.5 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border-2 border-gray-200 dark:border-gray-700 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                       </div>
                     </td>
                   )}

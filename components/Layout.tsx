@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, AppState } from '../types';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,6 +17,23 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSectionChange, user, isGuest, onLogout, data }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('nano-theme');
+      return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('nano-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('nano-theme', 'light');
+    }
+  }, [isDarkMode]);
 
   const criticalNotas = data?.notas.filter(n => ['Pendente', 'Em Conferência', 'Pré Nota'].includes(n.status) && differenceInDays(new Date(), parseISO(n.data)) >= 3) || [];
 
@@ -38,7 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
   }
 
   return (
-    <div className="flex h-screen overflow-hidden flex-col">
+    <div className="flex h-screen overflow-hidden flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Header */}
       <header className="h-16 bg-[#006B47] flex items-center justify-between px-4 sm:px-6 shrink-0 z-50 text-white shadow-lg">
         <div className="flex items-center gap-4 sm:gap-6">
@@ -58,6 +75,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="p-2.5 sm:p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-white"
+            title={isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
+          >
+            {isDarkMode ? (
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.071 16.071l.707.707M7.757 7.757l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
+            ) : (
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            )}
+          </button>
+
           {/* Notifications */}
           <div className="relative">
             <button
@@ -70,13 +100,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-4 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 text-gray-900 z-[100] overflow-hidden animate-scaleIn">
-                <div className="p-5 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+              <div className="absolute right-0 mt-4 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-gray-100 z-[100] overflow-hidden animate-scaleIn">
+                <div className="p-5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                   <div>
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#006B47]">Central Nano</span>
-                    <h4 className="text-base font-bold text-gray-900">Alertas Ativos</h4>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#006B47] dark:text-emerald-400">Central Nano</span>
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white">Alertas Ativos</h4>
                   </div>
-                  <button onClick={() => setShowNotifications(false)} className="p-2 hover:bg-gray-200 rounded-full transition-all text-gray-400">
+                  <button onClick={() => setShowNotifications(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-all text-gray-400">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
@@ -86,13 +116,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
                       <div
                         key={idx}
                         onClick={() => { onSectionChange(item.section); setShowNotifications(false); }}
-                        className="p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-all flex items-start gap-4"
+                        className="p-4 border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all flex items-start gap-4"
                       >
-                        <div className="w-10 h-10 shrink-0 bg-red-100 text-red-500 rounded-xl flex items-center justify-center text-sm font-bold">!</div>
+                        <div className="w-10 h-10 shrink-0 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-xl flex items-center justify-center text-sm font-bold">!</div>
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
-                            <p className="text-sm font-semibold text-gray-900">#{item.numero} - {item.tipo}</p>
-                            <p className="text-[10px] text-gray-400">{format(parseISO(item.d), 'dd/MM')}</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">#{item.numero} - {item.tipo}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500">{format(parseISO(item.d), 'dd/MM')}</p>
                           </div>
                           <p className="text-[10px] font-bold text-red-500 uppercase mt-1">{item.status}</p>
                         </div>
@@ -100,10 +130,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
                     ))
                   ) : (
                     <div className="p-10 text-center">
-                      <div className="w-12 h-12 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                       </div>
-                      <p className="text-xs text-gray-400">Nenhum alerta crítico</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Nenhum alerta crítico</p>
                     </div>
                   )}
                 </div>
@@ -139,7 +169,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
         )}
 
         {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-[60] w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed inset-y-0 left-0 z-[60] w-64 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-800 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col h-full">
             {/* Sidebar Header - Diário de Bordo */}
             <div className="p-4">
@@ -157,7 +187,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
                   onClick={() => { onSectionChange(item.id); setSidebarOpen(false); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentSection === item.id
                     ? 'bg-[#006B47] text-white shadow-lg'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
                     }`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} /></svg>
@@ -169,7 +199,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentSection, onSect
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-10">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-10 transition-colors duration-300">
           <div className="max-w-7xl mx-auto animate-fadeIn">
             {children}
           </div>
