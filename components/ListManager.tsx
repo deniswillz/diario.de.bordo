@@ -333,9 +333,12 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                       <div className="flex flex-col gap-2">
                         <div className="flex items-baseline gap-3">
                           <span className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tighter italic">#{item.numero || item.documento}</span>
-                          <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{item.conferente || item.fornecedor}</span>
+                          <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{item.fornecedor}</span>
                         </div>
-                        {item.tipo && <div><span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded text-[7px] font-bold uppercase tracking-wider border border-gray-200 dark:border-gray-700">{item.tipo}</span></div>}
+                        <div className="flex items-center gap-3">
+                          <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{item.conferente}</span>
+                          {item.tipo && <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded text-[7px] font-bold uppercase tracking-wider border border-gray-200 dark:border-gray-700">{item.tipo}</span>}
+                        </div>
                       </div>
                     </td>
                   )}
