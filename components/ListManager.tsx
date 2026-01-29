@@ -217,16 +217,11 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                     </div>
                   )}
                   {type === 'comentario' && (
-                    <div>
-                      <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Responsável</label>
-                      <input
-                        type="text"
-                        placeholder="Nome do responsável"
-                        value={editing?.conferente || ''}
-                        onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)}
-                        className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner"
-                        required
-                      />
+                    <div className="opacity-50">
+                      <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Sistema Nano</label>
+                      <div className="px-6 py-4 bg-gray-100 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-2xl font-bold text-gray-500 dark:text-gray-400 text-sm italic">
+                        Registro vinculado à cronologia do sistema.
+                      </div>
                     </div>
                   )}
                 </div>
@@ -343,8 +338,8 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
             <tbody className="divide-y-2 divide-gray-50 dark:divide-gray-700">
               {filteredItems.map(item => (
                 <tr key={item.id} className="hover:bg-emerald-50/20 dark:hover:bg-emerald-900/10 group transition-all">
-                  <td className="px-10 py-10 font-black text-gray-800 dark:text-gray-300 text-sm italic">{format(parseISO(item.data), 'dd/MM/yyyy')}</td>
-                  {type !== 'comentario' && (
+                  <td className="px-10 py-10 font-black text-gray-800 dark:text-gray-300 text-sm italic">{item.data ? format(parseISO(item.data), 'dd/MM/yyyy') : '-'}</td>
+                  {type !== 'comentario' ? (
                     <td className="px-10 py-10">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-baseline gap-3">
@@ -355,6 +350,13 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                           <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{item.conferente}</span>
                           {item.tipo && <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded text-[7px] font-bold uppercase tracking-wider border border-gray-200 dark:border-gray-700">{item.tipo}</span>}
                         </div>
+                      </div>
+                    </td>
+                  ) : (
+                    <td className="px-10 py-10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center text-sm">💬</div>
+                        <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Apontamento</span>
                       </div>
                     </td>
                   )}

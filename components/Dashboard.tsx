@@ -186,7 +186,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, analysis, onRunAnaly
                       </div>
                       <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 leading-relaxed italic line-clamp-4">"{c.texto}"</p>
                     </div>
-                    <p className="mt-6 text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Por: <span className="text-purple-600 dark:text-purple-400">{c.conferente}</span></p>
+                    <p className="mt-6 text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Diário de Bordo <span className="text-purple-600 dark:text-purple-400">Nano</span></p>
                     <button
                       onClick={() => { setSelectedDay(null); onNavigateToList?.('comentarios'); }}
                       className="absolute top-4 right-4 w-10 h-10 bg-purple-600 dark:bg-purple-500 text-white rounded-xl flex items-center justify-center shadow-xl hover:scale-110 transition-transform opacity-0 group-hover:opacity-100 active:scale-95"

@@ -82,6 +82,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
               onChange={e => setUsername(e.target.value)}
               className="w-full bg-slate-100 dark:bg-gray-700/50 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47] text-gray-900 dark:text-gray-100"
               placeholder="Seu login"
+              autoComplete="username"
               required
             />
           </div>
@@ -101,6 +102,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onGuest }) => {
               onChange={e => setPassword(e.target.value)}
               className="w-full bg-slate-100 dark:bg-gray-700/50 border-0 rounded-lg p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-[#006B47] text-gray-900 dark:text-gray-100"
               placeholder="••••••••"
+              autoComplete="current-password"
               required
             />
           </div>
