@@ -192,32 +192,48 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
               <div className="p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8 max-h-[60vh] bg-white dark:bg-gray-900">
                 {errorMessage && <div className="p-5 bg-red-50 text-red-600 rounded-2xl border-2 border-red-200 font-black text-[10px] uppercase tracking-widest">{errorMessage}</div>}
 
-                {/* FORMULÁRIO: NOTA FISCAL */}
+                {/* Linha 1: Data e Identificação (Compacto) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Data</label>
+                    <input
+                      type="date"
+                      className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all"
+                      value={editing.data}
+                      onChange={(e) => setEditing({ ...editing, data: e.target.value })}
+                    />
+                  </div>
+                  {type === 'nota' && (
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Número da Nota</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: NF-12345"
+                        value={editing?.numero || ''}
+                        onChange={e => setEditing({ ...editing, numero: e.target.value } as any)}
+                        className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner"
+                        required
+                      />
+                    </div>
+                  )}
+                  {type === 'comentario' && (
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Responsável</label>
+                      <input
+                        type="text"
+                        placeholder="Nome do responsável"
+                        value={editing?.conferente || ''}
+                        onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)}
+                        className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner"
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* FORMULÁRIO: NOTA FISCAL (Campos restantes) */}
                 {type === 'nota' && (
                   <div className="space-y-8">
-                    {/* Linha 1: Data e Nota (Compacto) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div>
-                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Data</label>
-                        <input
-                          type="date"
-                          className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all"
-                          value={editing.data}
-                          onChange={(e) => setEditing({ ...editing, data: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Número da Nota</label>
-                        <input
-                          type="text"
-                          placeholder="Ex: NF-12345"
-                          value={editing?.numero || ''}
-                          onChange={e => setEditing({ ...editing, numero: e.target.value } as any)}
-                          className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner"
-                          required
-                        />
-                      </div>
-                    </div>
                     {/* Linha 2: Fornecedor (Full Width) */}
                     <div>
                       <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Fornecedor</label>
@@ -234,8 +250,8 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                         {supplierSuggestions.map(s => <option key={s} value={s} />)}
                       </datalist>
                     </div>
-                    {/* Linha 3: Conferente e Status (Compacto) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Linha 3: Conferente, Status e Tipo (Compacto) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                       <div>
                         <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Conferente</label>
                         <input type="text" placeholder="Nome do conferente responsável" value={editing?.conferente || ''} onChange={e => setEditing({ ...editing, conferente: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner" required />
@@ -249,7 +265,7 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
                           <option value="Classificada">Classificada</option>
                         </select>
                       </div>
-                      <div>
+                      <div className="md:col-span-2 lg:col-span-1">
                         <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-4 mb-2 block">Tipo</label>
                         <select value={editing?.tipo || ''} onChange={e => setEditing({ ...editing, tipo: e.target.value } as any)} className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl font-bold text-gray-900 dark:text-gray-100 focus:border-emerald-500 transition-all shadow-inner">
                           <option value="">Selecione...</option>
