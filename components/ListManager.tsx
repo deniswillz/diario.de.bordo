@@ -29,10 +29,13 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
   const canEdit = role === 'admin' || role === 'editor';
 
   const openNewForm = () => {
-    setEditing({
+    const initialData: any = {
       data: format(new Date(), 'yyyy-MM-dd'),
-      status: type === 'nota' ? 'Pendente' : ''
-    } as any);
+    };
+    if (type === 'nota') {
+      initialData.status = 'Pendente';
+    }
+    setEditing(initialData);
     setErrorMessage(null);
     setIsFormOpen(true);
   };
@@ -68,7 +71,23 @@ export const ListManager = <T extends { id: string, data: string, numero?: strin
 
     setLoading(true);
     try {
-      await onSave(editing);
+      // Sanitize payload to avoid Supabase schema errors
+      const payload: any = { ...editing };
+      if (type === 'comentario') {
+        // Fields only for 'notas_fiscais'
+        delete payload.status;
+        delete payload.numero;
+        delete payload.fornecedor;
+        delete payload.conferente;
+        delete payload.observacao;
+        delete payload.tipo;
+        delete payload.documento;
+      } else if (type === 'nota') {
+        // Fields only for 'comentarios'
+        delete payload.texto;
+      }
+
+      await onSave(payload);
       setEditing(null);
       setDuplicateWarning(null);
       setIsFormOpen(false);
